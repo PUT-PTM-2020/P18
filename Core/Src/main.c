@@ -23,7 +23,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "ff.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -46,6 +46,8 @@ ADC_HandleTypeDef hadc1;
 
 DAC_HandleTypeDef hdac;
 
+SPI_HandleTypeDef hspi1;
+
 TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim4;
@@ -56,6 +58,14 @@ volatile int x=0;
 volatile int y=0;
 volatile int z=100;
 volatile int wybor=-1;
+
+/*-------------Zmienne potrzebne do zapisu i odczytu na kacie pamieci-------------------------------*/
+char buffer[256]; //bufor odczytu i zapisu
+static FATFS FatFs; //uchwyt do urządzenia FatFs (dysku, karty SD...)
+FRESULT fresult; //do przechowywania wyniku operacji na bibliotece FatFs
+FIL file; //uchwyt do otwartego pliku
+WORD bytes_written; //liczba zapisanych byte
+WORD bytes_read; //liczba odczytanych byte
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -66,7 +76,27 @@ static void MX_TIM3_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_DAC_Init(void);
 static void MX_ADC1_Init(void);
+static void MX_SPI1_Init(void);
 /* USER CODE BEGIN PFP */
+/*---------------------Zapis na karte SD-----------------------*/
+void writeSD()
+{
+	fresult = f_mount(&FatFs, "", 0);
+	fresult = f_open(&file, "write.txt", FA_OPEN_ALWAYS | FA_WRITE);
+	int len = sprintf( buffer, "Hello PTM!\r\n");
+	fresult = f_write(&file, buffer, len, &bytes_written);
+	fresult = f_close (&file);
+}
+
+/*---------------------Odczyt na karcie SD-----------------------*/
+void readSD()
+{
+	fresult = f_mount(&FatFs, "", 0);
+	fresult = f_open(&file, "read.txt", FA_READ);
+	fresult = f_read(&file, buffer, 16, &bytes_read);
+	fresult = f_close(&file);
+
+}
 
 
 /*--------------------Odczyt z mikrofonu------------------*/
@@ -257,6 +287,7 @@ int main(void)
   MX_TIM2_Init();
   MX_DAC_Init();
   MX_ADC1_Init();
+  MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
 HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
 HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
@@ -272,7 +303,10 @@ HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-rgb1_set_color();
+	  writeSD();
+	  readSD();
+
+	  rgb1_set_color();
 
 
 	  	  	 if (HAL_GPIO_ReadPin(GPIOE, GPIO_PIN_0)==GPIO_PIN_RESET)
@@ -467,6 +501,44 @@ static void MX_DAC_Init(void)
   /* USER CODE BEGIN DAC_Init 2 */
 
   /* USER CODE END DAC_Init 2 */
+
+}
+
+/**
+  * @brief SPI1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_SPI1_Init(void)
+{
+
+  /* USER CODE BEGIN SPI1_Init 0 */
+
+  /* USER CODE END SPI1_Init 0 */
+
+  /* USER CODE BEGIN SPI1_Init 1 */
+
+  /* USER CODE END SPI1_Init 1 */
+  /* SPI1 parameter configuration*/
+  hspi1.Instance = SPI1;
+  hspi1.Init.Mode = SPI_MODE_MASTER;
+  hspi1.Init.Direction = SPI_DIRECTION_2LINES;
+  hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
+  hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
+  hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
+  hspi1.Init.NSS = SPI_NSS_SOFT;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;
+  hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
+  hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
+  hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+  hspi1.Init.CRCPolynomial = 10;
+  if (HAL_SPI_Init(&hspi1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN SPI1_Init 2 */
+
+  /* USER CODE END SPI1_Init 2 */
 
 }
 
