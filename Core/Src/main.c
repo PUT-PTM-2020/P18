@@ -60,12 +60,12 @@ volatile int z=100;
 volatile int wybor=-1;
 
 /*-------------Zmienne potrzebne do zapisu i odczytu na kacie pamieci-------------------------------*/
-char buffer[256]; //bufor odczytu i zapisu
+/*char buffer[256]; //bufor odczytu i zapisu
 static FATFS FatFs; //uchwyt do urządzenia FatFs (dysku, karty SD...)
 FRESULT fresult; //do przechowywania wyniku operacji na bibliotece FatFs
 FIL file; //uchwyt do otwartego pliku
 WORD bytes_written; //liczba zapisanych byte
-WORD bytes_read; //liczba odczytanych byte
+WORD bytes_read; //liczba odczytanych byte*/
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -79,17 +79,17 @@ static void MX_ADC1_Init(void);
 static void MX_SPI1_Init(void);
 /* USER CODE BEGIN PFP */
 /*---------------------Zapis na karte SD-----------------------*/
-void writeSD()
+/*void writeSD()
 {
 	fresult = f_mount(&FatFs, "", 0);
 	fresult = f_open(&file, "write.txt", FA_OPEN_ALWAYS | FA_WRITE);
 	int len = sprintf( buffer, "Hello PTM!\r\n");
 	fresult = f_write(&file, buffer, len, &bytes_written);
 	fresult = f_close (&file);
-}
+}*/
 
 /*---------------------Odczyt na karcie SD-----------------------*/
-void readSD()
+/*void readSD()
 {
 	fresult = f_mount(&FatFs, "", 0);
 	fresult = f_open(&file, "read.txt", FA_READ);
@@ -97,7 +97,7 @@ void readSD()
 	fresult = f_close(&file);
 
 }
-
+*/
 
 /*--------------------Odczyt z mikrofonu------------------*/
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef*htim)
@@ -199,44 +199,40 @@ switch(x)
 }
 */
 /*----------Czytanie z przyciskow---------------*/
-//do zrobienia
-/*void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+void read_bottoms()
 {
 
-	  if (HAL_GPIO_ReadPin(GPIOE, GPIO_PIN_0)==GPIO_PIN_SET)
-			  	  	  {
-				  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, SET);
-			  	  	  }
-	if (HAL_GPIO_ReadPin(GPIOE, GPIO_PIN_1)==GPIO_PIN_SET)
-			  	  	  {
-				  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, SET);
-			  	  	  	  }
-	if (HAL_GPIO_ReadPin(GPIOE, GPIO_PIN_2)==GPIO_PIN_SET)
-			  	  	  	  {
-				  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, SET);
-			  	  	  	   }
-	if (HAL_GPIO_ReadPin(GPIOE, GPIO_PIN_3)==GPIO_PIN_SET)
-			  	  	  	  {
-				  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, SET);
-			  	  	  	  }
-	if (HAL_GPIO_ReadPin(GPIOE, GPIO_PIN_0)==GPIO_PIN_RESET)
-			  	  	  	  {
-			  		HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, RESET);
-			  	  	  	  }
-	if (HAL_GPIO_ReadPin(GPIOE, GPIO_PIN_1)==GPIO_PIN_RESET)
-			  	  	  	  {
-			  		HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, RESET);
-			  	  	  	  	  }
-	if (HAL_GPIO_ReadPin(GPIOE, GPIO_PIN_2)==GPIO_PIN_RESET)
-			  	  	  	  	  {
-			  		HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, RESET);
-			  	  	  	  	   }
-	if (HAL_GPIO_ReadPin(GPIOE, GPIO_PIN_3)==GPIO_PIN_RESET)
-			  	  	  	  	  {
-			  		HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, RESET);
-			  	  	  	  	  }
-}*/
+	  	 if (HAL_GPIO_ReadPin(GPIOE, GPIO_PIN_0)==GPIO_PIN_RESET)
+	  	 	  	 			  	  	{wybor=0;}
+	  	 if (HAL_GPIO_ReadPin(GPIOE, GPIO_PIN_1)==GPIO_PIN_RESET)
+	  	 	  	  	 			  	{wybor=1;}
+	  	 if (HAL_GPIO_ReadPin(GPIOE, GPIO_PIN_2)==GPIO_PIN_RESET)
+	  		  	  	  	  	 		{wybor=2;}
+	  	 if (HAL_GPIO_ReadPin(GPIOE, GPIO_PIN_3)==GPIO_PIN_RESET)
+	  		  	  	 	  	  	 	{wybor=3;}
+	  	 if (HAL_GPIO_ReadPin(GPIOE, GPIO_PIN_4)==GPIO_PIN_RESET)
+	  	  	  	  	  	 			{wybor=4;}
+	  	 if (HAL_GPIO_ReadPin(GPIOE, GPIO_PIN_5)==GPIO_PIN_RESET)
+	  	  	  	 	  	  	 		{wybor=5;}
+	  	 if (HAL_GPIO_ReadPin(GPIOE, GPIO_PIN_6)==GPIO_PIN_RESET)
+	  	  	  		  	  	  	  	 {wybor=6;}
+	  	 if (HAL_GPIO_ReadPin(GPIOE, GPIO_PIN_7)==GPIO_PIN_RESET)
+	  	  	  		  	  	 	  	 {wybor=7;}
 
+	  switch(wybor)
+	  	  {				case 0: { HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, SET); break;}
+	  	  				case 1: { HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, RESET); break;}
+	  	  				case 2: { HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, SET); break;}
+	  	  				case 3: { HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, RESET); break;}
+	  	  	  	  	  	case 4: { HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, SET); break;}
+		  	  	  	case 5: { HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, RESET); break;}
+	  					case 6: { HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, SET); break;}
+	  					case 7: { HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, RESET); break;}
+	  					default: {HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12|GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_15, RESET);
+	  					break;}
+
+	  	  }
+}
 
 
 
@@ -292,84 +288,24 @@ int main(void)
 HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
 HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
 HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3);
-
 HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
+HAL_DAC_Start(&hdac,DAC_CHANNEL_1);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  HAL_DAC_SetValue(&hdac,DAC_CHANNEL_1,DAC_ALIGN_12B_R,2048);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  writeSD();
-	  readSD();
+
+	  // writeSD();
+	 // readSD();
 
 	  rgb1_set_color();
 
-
-	  	  	 if (HAL_GPIO_ReadPin(GPIOE, GPIO_PIN_0)==GPIO_PIN_RESET)
-	  	  	 	  	 			  	  	{wybor=0;}
-	  	  	 if (HAL_GPIO_ReadPin(GPIOE, GPIO_PIN_1)==GPIO_PIN_RESET)
-	  	  	 	  	  	 			  	{wybor=1;}
-	  	  	 if (HAL_GPIO_ReadPin(GPIOE, GPIO_PIN_2)==GPIO_PIN_RESET)
-	  	  		  	  	  	  	 		{wybor=2;}
-	  	  	 if (HAL_GPIO_ReadPin(GPIOE, GPIO_PIN_3)==GPIO_PIN_RESET)
-	  	  		  	  	 	  	  	 	{wybor=3;}
-	  	  	 if (HAL_GPIO_ReadPin(GPIOE, GPIO_PIN_4)==GPIO_PIN_RESET)
-	  	  	  	  	  	  	 			{wybor=4;}
-	  	  	 if (HAL_GPIO_ReadPin(GPIOE, GPIO_PIN_5)==GPIO_PIN_RESET)
-	  	  	  	  	 	  	  	 		{wybor=5;}
-	  	  	 if (HAL_GPIO_ReadPin(GPIOE, GPIO_PIN_6)==GPIO_PIN_RESET)
-	  	  	  	  		  	  	  	  	 {wybor=6;}
-	  	  	 if (HAL_GPIO_ReadPin(GPIOE, GPIO_PIN_7)==GPIO_PIN_RESET)
-	  	  	  	  		  	  	 	  	 {wybor=7;}
-
-	  	  switch(wybor)
-	  	  	  {				case 0: { HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, SET); break;}
-	  	  	  				case 1: { HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, RESET); break;}
-	  	  	  				case 2: { HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, SET); break;}
-	  	  	  				case 3: { HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, RESET); break;}
-	  	  	  	  	  	  	case 4: { HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, SET); break;}
-				  	  	  	case 5: { HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, RESET); break;}
-	  	  					case 6: { HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, SET); break;}
-	  	  					case 7: { HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, RESET); break;}
-	  	  					default: {HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12|GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_15, RESET);
-	  	  					break;}
-
-	  	  	  }
-
-
-	  	HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_14);
-	  		  			HAL_Delay(1000);
-	  	HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_13);
-	  		  			HAL_Delay(1000);
-
-	  	/* switch(x)
-	  		{
-	  		case 0:
-	  			//rgb2_set(0);
-	  			//TIM2->CCR1=0;
-	  			//HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, SET);
-	  			HAL_Delay(1000);
-	  			x++;
-
-	  			break;
-	  		case 1:
-	  			TIM2->CCR1=65536/2;
-	  			//rgb2_set(125);
-	  			HAL_Delay(1000);
-	  			x++;
-	  			break;
-	  		case 2:
-	  			//rgb2_set(255);
-	  			TIM2->CCR1=65536-10;
-	  				HAL_Delay(1000);
-	  				x=0;
-	  				break;
-
-	  	*/
   }
   /* USER CODE END 3 */
 }
