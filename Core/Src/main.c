@@ -24,6 +24,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "ff.h"
+extern const uint8_t rawAudio[123200];
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
