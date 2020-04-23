@@ -32,13 +32,16 @@ default.size.stdout \
 OBJDUMP_LIST += \
 projekt.list \
 
+OBJCOPY_BIN += \
+projekt.bin \
+
 
 # All Target
 all: projekt.elf secondary-outputs
 
 # Tool invocations
-projekt.elf: $(OBJS) $(USER_OBJS) C:\Users\user\Documents\GitHub\P18\STM32F407VGTX_FLASH.ld
-	arm-none-eabi-gcc -o "projekt.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\user\Documents\GitHub\P18\STM32F407VGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="projekt.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+projekt.elf: $(OBJS) $(USER_OBJS) D:\Studia\IV_semestr\PTM\projekt\P18\STM32F407VGTX_FLASH.ld
+	arm-none-eabi-gcc -o "projekt.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"D:\Studia\IV_semestr\PTM\projekt\P18\STM32F407VGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="projekt.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
@@ -52,12 +55,17 @@ projekt.list: $(EXECUTABLES)
 	@echo 'Finished building: $@'
 	@echo ' '
 
+projekt.bin: $(EXECUTABLES)
+	arm-none-eabi-objcopy  -O binary $(EXECUTABLES) "projekt.bin"
+	@echo 'Finished building: $@'
+	@echo ' '
+
 # Other Targets
 clean:
 	-$(RM) *
 	-@echo ' '
 
-secondary-outputs: $(SIZE_OUTPUT) $(OBJDUMP_LIST)
+secondary-outputs: $(SIZE_OUTPUT) $(OBJDUMP_LIST) $(OBJCOPY_BIN)
 
 .PHONY: all clean dependents
 .SECONDARY:
