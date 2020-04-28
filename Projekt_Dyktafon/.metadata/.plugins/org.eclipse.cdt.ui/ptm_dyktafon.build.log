@@ -1,0 +1,10 @@
+15:38:24 **** Incremental Build of configuration Debug for project ptm_dyktafon ****
+make -j8 all 
+arm-none-eabi-size   ptm_dyktafon.elf 
+   text	   data	    bss	    dec	    hex	filename
+ 152056	     36	   3360	 155452	  25f3c	ptm_dyktafon.elf
+Finished building: default.size.stdout
+ 
+
+15:38:33 Build Finished. 0 errors, 0 warnings. (took 9s.642ms)
+
