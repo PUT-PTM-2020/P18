@@ -40,8 +40,8 @@ ptm_dyktafon.bin \
 all: ptm_dyktafon.elf secondary-outputs
 
 # Tool invocations
-ptm_dyktafon.elf: $(OBJS) $(USER_OBJS) C:\Users\user\Desktop\Projekt_Dyktafon\ptm_dyktafon\STM32F407VGTX_FLASH.ld
-	arm-none-eabi-gcc -o "ptm_dyktafon.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\user\Desktop\Projekt_Dyktafon\ptm_dyktafon\STM32F407VGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="ptm_dyktafon.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+ptm_dyktafon.elf: $(OBJS) $(USER_OBJS) D:\Studia\IV_semestr\PTM\projekt\P18\ptm_dyktafon\STM32F407VGTX_FLASH.ld
+	arm-none-eabi-gcc -o "ptm_dyktafon.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"D:\Studia\IV_semestr\PTM\projekt\P18\ptm_dyktafon\STM32F407VGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="ptm_dyktafon.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 

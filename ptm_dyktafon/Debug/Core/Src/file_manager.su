@@ -1,0 +1,2 @@
+file_manager.c:10:5:GetNextFileID	64	static
+file_manager.c:38:9:GetFileInfo	80	static
