@@ -104,11 +104,11 @@ int AddWaveHeader(char* file_path)
 	  return 0;
 }
 
-int SaveChunk(char* file_path, int16_t* data[])
+int SaveChunk(char* file_path, int16_t data[])
 {
 	FIL* f;
 	uint32_t chunk_size = 256;
-	f_open(f, file_path, FA_OPEN_APPEND | FA_READ);
+	f_open(f, file_path, FA_OPEN_APPEND | FA_WRITE);
 	uint16_t bw;
 	f_write(f, data, chunk_size, &bw);
 	if (bw!=44) return 1;

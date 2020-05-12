@@ -25,6 +25,8 @@
 /* USER CODE BEGIN Includes */
 #include "ff.h"
 #include "STM_MY_LCD16X2.h"
+#include "file_manager.h"
+#include "recorder.h"
 extern const uint8_t rawAudio[123200];
 /* USER CODE END Includes */
 
@@ -51,6 +53,7 @@ SPI_HandleTypeDef hspi1;
 
 TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim3;
+TIM_HandleTypeDef htim4;
 TIM_HandleTypeDef htim5;
 
 /* USER CODE BEGIN PV */
@@ -61,9 +64,12 @@ double volume=0;
 uint16_t value;
 double V=2.95;
 
-
+/*-----------zmienne potrzebne do odtwarzania-------------*/
+int recording = 0;
+int16_t data_chunk[250];
+int data_iterator =0;
 /*------------zmienne do ... --------------*/
-volatile int x=0;
+volatile int16_t x=0;
 volatile int y=0;
 volatile int z=100;
 volatile int selection=-1;
@@ -72,6 +78,7 @@ char buffer[256]; //bufor odczytu i zapisu
 static FATFS FatFs; //uchwyt do urządzenia FatFs (dysku, karty SD...)
 FRESULT fresult; //do przechowywania wyniku operacji na bibliotece FatFs
 FIL file; //uchwyt do otwartego pliku
+char * file_name="0.wav";
 WORD bytes_written; //liczba zapisanych byte
 WORD bytes_read; //liczba odczytanych byte
 /* USER CODE END PV */
@@ -85,6 +92,7 @@ static void MX_SPI1_Init(void);
 static void MX_DAC_Init(void);
 static void MX_TIM5_Init(void);
 static void MX_ADC1_Init(void);
+static void MX_TIM4_Init(void);
 /* USER CODE BEGIN PFP */
 
 /*---------------------Zapis na karte SD-----------------------*/
@@ -115,12 +123,21 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef*htim)
 {
 	if(htim->Instance== TIM4)
 	{
+		if (recording)
+		{
 		HAL_ADC_Start(&hadc1);
 			  if(HAL_ADC_PollForConversion(&hadc1, 10) == HAL_OK)
 			  {
 				  adc_value = HAL_ADC_GetValue(&hadc1);
-				  x = (2.95/(double)4096) * adc_value;
+				  x = (int16_t)(2.95/(double)4096) * adc_value;
+				  data_chunk[data_iterator] = x;
+				  data_iterator++;
+				  if (data_iterator == 250)
+					  {
+					  SaveChunk(file_name, data_chunk);
+					  }
 			  }
+		}
 	}
 }
 
@@ -150,7 +167,6 @@ void set_volume()
 		  value = HAL_ADC_GetValue(&hadc1);
 		  volume=(V/(double)4096)*value*10;
 
-
 	  }
 
 }
@@ -175,7 +191,7 @@ void rgb2_set(uint8_t red)
 //do zrobienia
 void rgb2_set_intensity()
 {
-rgb2_set(255);
+	rgb2_set(255);
 }
 
 /*-----Proba ustawienia janosci diody--------------*/
@@ -238,60 +254,87 @@ void read_bottoms()
 	  	  	  		  	  	 	  	 {selection=7;}
 
 	  switch(selection)
-	  	  {				case 0: {
-	  		  	  	  	  	  	  	  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, SET);
-	  		  	  	  	  	  	  	  if ((sample<10)&&(sample>0))
-	  		  	  	  	  	  	  	  	  {
-	  		  	  	  	  	  	  		  	  sample=0;
-	  		  	  	  	  	  	  	  	  }
-	  		  	  	  	  	  	  	  else if (sample==0)
-	  		  	  	  	  	  	  	  	  {
-	  		  	  	  	  	  	  		  	  //poprzedni utwor
-									  	  }
-	  		  	  	  	  	  	  	  else
-	  		  	  	  	  	  	  	  	  {
-	  		  	  	  	  	  	  		  sample=sample-10;
-	  		  	  	  	  	  	  	  	  }
+	  	  {
+				 case 0: {
+					  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, SET);
+					  if ((sample<10)&&(sample>0))
+						  {
+							  sample=0;
+						  }
+					  else if (sample==0)
+						  {
+							  //poprzedni utwor
+						  }
+					  else
+						  {
+						  sample=sample-10;
+						  }
 
-	  	  	  	  	  	  	  	  	  break;
-	  	  	  	  	  	  	  	}
-	  	  				case 1: {
-	  	  							  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_9, RESET);
-	  	  							  sample=sample+0;
-	  	  							  rgb1_set(255, 255, 0); //pomaranczowy
-	  	  							  break;
-	  	  						}
-	  	  				case 2: {
-	  	  							  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, SET);
-	  	  							  sample++;
-	  	  							  rgb1_set(0, 255, 0); //zielony
-	  	  							  break;
-	  	  						}
-	  	  				case 3: {
-	  	  							 HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, RESET);
-	  	  							 if (sample+10>123200/*utwor.size()*/)
-	  	  							 {
-	  	  								 sample=0;
-	  	  							 }
-	  	  							 else
-	  	  							 {
-	  	  								sample=sample+10;
-	  	  							 }
-
-	  	  							break;
-	  	  						}
-	  	  	  	  	  	case 4: { HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, SET);
-	  	  	  	  	  			rgb1_set(255, 0, 0);//czerwony
-	  	  	  	  	  			break;
-	  	  	  	  	  			}
-	  	  	  	  	  	case 5: { HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, RESET);
-	  	  	  	  	  			rgb1_set(0, 0, 255);//niebieski
-	  	  	  	  	  			break;
-	  	  	  	  	  			}
-	  					case 6: { HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, SET); break;}
-	  					case 7: { HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, RESET); break;}
-	  					default: {HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12|GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_15, RESET);
-	  								break;}
+					  break;
+						}
+				case 1: {
+					  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_9, RESET);
+					  sample=sample+0;
+					  rgb1_set(255, 255, 0); //pomaranczowy
+					  break;
+						}
+				case 2: {
+					  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, SET);
+					  sample++;
+					  rgb1_set(0, 255, 0); //zielony
+					  break;
+						}
+				case 3: {
+					 HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, RESET);
+					 if (sample+10>123200/*utwor.size()*/)
+					 {
+						 sample=0;
+					 }
+					 else
+					 {
+						sample=sample+10;
+					 }
+					break;
+						}
+				case 4: {
+					HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, SET);
+					rgb1_set(255, 0, 0);//czerwony
+					if (recording)
+						{
+						recording = 0;
+						AddWaveHeader(file_name); // nadpisuje nagłówek
+						}
+					else
+					{
+						file_name = GetNextFileName();
+						AddWaveHeader(file_name); // dodaje  nagłówek
+						recording = 1;
+					}
+					break;
+					}
+				case 5: {
+					HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, RESET);
+					rgb1_set(0, 0, 255);//niebieski
+					break;
+				}
+				case 6: {
+					if (atoi(file_name)>0)
+					{
+						file_name = PreviousFile(file_name);
+						fresult = f_close (&file);
+						fresult = f_open(&file, file_name, FA_READ);
+						HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, SET);
+					}
+					break;
+				}
+				case 7: {
+					file_name = NextFile(file_name);
+					fresult = f_open(&file, file_name, FA_READ);
+					HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, RESET);
+					break;
+				}
+				default: {HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12|GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_15, RESET);
+							break;}
 
 	  	  }
 
@@ -367,6 +410,7 @@ int main(void)
   MX_DAC_Init();
   MX_TIM5_Init();
   MX_ADC1_Init();
+  MX_TIM4_Init();
   /* USER CODE BEGIN 2 */
   HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
   HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
@@ -666,6 +710,51 @@ static void MX_TIM3_Init(void)
 
   /* USER CODE END TIM3_Init 2 */
   HAL_TIM_MspPostInit(&htim3);
+
+}
+
+/**
+  * @brief TIM4 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM4_Init(void)
+{
+
+  /* USER CODE BEGIN TIM4_Init 0 */
+
+  /* USER CODE END TIM4_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM4_Init 1 */
+
+  /* USER CODE END TIM4_Init 1 */
+  htim4.Instance = TIM4;
+  htim4.Init.Prescaler = 49;
+  htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim4.Init.Period = 209;
+  htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim4) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim4, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim4, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM4_Init 2 */
+
+  /* USER CODE END TIM4_Init 2 */
 
 }
 

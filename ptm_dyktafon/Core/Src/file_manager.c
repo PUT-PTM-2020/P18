@@ -6,8 +6,9 @@
  */
 #include "ff.h"
 #include <stdlib.h>
+#include <string.h>
 
-int GetNextFileID()
+char* GetNextFileName()
 {
 	 FRESULT res;
 	 DIR dir;
@@ -32,10 +33,14 @@ int GetNextFileID()
 	 }
 
 	 ID++;
-	 return ID;
+	 char *c;
+	   sprintf(c, "%d", ID);
+	   strcat(c,".wav");
+	   printf("%s",c);
+	 return c;
 }
 
-FILINFO GetFileInfo(int song_number)
+char * NextFile(char* file_name)
 {
 	FRESULT res;
 	DIR dir;
@@ -44,12 +49,38 @@ FILINFO GetFileInfo(int song_number)
 
 	res = f_opendir(&dir, path);                       /* Open the directory */
 	if (res == FR_OK) {
-		 for (int i=0; i<song_number; i++) {
+		 for (;;) {
 			 res = f_readdir(&dir, &fno);                   /* Read a directory item */
 			 if (res != FR_OK || fno.fname[0] == 0) break;  /* Break on error or end of dir */
+			 if (file_name == fno.fname){
+				 res = f_readdir(&dir, &fno);
+				 return fno.fname;
+			 }
 		 }
 		 f_closedir(&dir);
 	 }
-	 return fno;
+	 return fno.fname;
+}
+char * PreviousFile(char* file_name)
+{
+	FRESULT res;
+	DIR dir;
+	static FILINFO fno;
+	char* path="/";
+	char* previous_name;
 
+	res = f_opendir(&dir, path);                       /* Open the directory */
+	if (res == FR_OK) {
+		 for (;;) {
+			 res = f_readdir(&dir, &fno);                   /* Read a directory item */
+			 if (res != FR_OK || fno.fname[0] == 0) break;  /* Break on error or end of dir */
+			 if (file_name == fno.fname){
+				 res = f_readdir(&dir, &fno);
+				 return previous_name;
+			 }
+			 previous_name = fno.fname;
+		 }
+		 f_closedir(&dir);
+	 }
+	 return fno.fname;
 }
