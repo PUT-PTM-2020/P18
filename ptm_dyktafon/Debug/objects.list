@@ -1,3 +1,4 @@
+"Core/Src/STM_MY_LCD16X2.o"
 "Core/Src/audio.o"
 "Core/Src/diskio.o"
 "Core/Src/ff.o"
