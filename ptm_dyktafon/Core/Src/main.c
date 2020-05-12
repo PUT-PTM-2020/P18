@@ -239,7 +239,7 @@ void read_bottoms()
 
 	  switch(selection)
 	  	  {				case 0: {
-	  		  	  	  	  	  	  	  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, SET);
+	  		  	  	  	  	  	  	  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, SET);
 	  		  	  	  	  	  	  	  if ((sample<10)&&(sample>0))
 	  		  	  	  	  	  	  	  	  {
 	  		  	  	  	  	  	  		  	  sample=0;
@@ -256,7 +256,7 @@ void read_bottoms()
 	  	  	  	  	  	  	  	  	  break;
 	  	  	  	  	  	  	  	}
 	  	  				case 1: {
-	  	  							  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, RESET);
+	  	  							  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_9, RESET);
 	  	  							  sample=sample+0;
 	  	  							  rgb1_set(255, 255, 0); //pomaranczowy
 	  	  							  break;
@@ -770,6 +770,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : PB7 PB9 */
+  GPIO_InitStruct.Pin = GPIO_PIN_7|GPIO_PIN_9;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pins : RS_Pin E_Pin */
   GPIO_InitStruct.Pin = RS_Pin|E_Pin;
