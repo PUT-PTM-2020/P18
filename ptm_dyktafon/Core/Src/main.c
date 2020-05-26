@@ -268,6 +268,8 @@ void read_bottoms()
 					  else
 						  {
 						  sample=sample-10;
+						  LCD1602_2ndLine();
+						  LCD1602_print("-10");
 						  }
 
 					  break;
@@ -275,12 +277,16 @@ void read_bottoms()
 				case 1: {
 					  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_9, RESET);
 					  sample=sample+0;
+					  LCD1602_2ndLine();
+					  LCD1602_print("stop");
 					  rgb1_set(255, 255, 0); //pomaranczowy
 					  break;
 						}
 				case 2: {
 					  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, SET);
 					  sample++;
+					  LCD1602_2ndLine();
+					  LCD1602_print("start");
 					  rgb1_set(0, 255, 0); //zielony
 					  break;
 						}
@@ -293,11 +299,15 @@ void read_bottoms()
 					 else
 					 {
 						sample=sample+10;
+						LCD1602_2ndLine();
+						LCD1602_print("+10");
 					 }
 					break;
 						}
 				case 4: {
 					HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, SET);
+					LCD1602_2ndLine();
+					LCD1602_print("recording");
 					rgb1_set(255, 0, 0);//czerwony
 					if (recording)
 						{
@@ -315,6 +325,8 @@ void read_bottoms()
 				case 5: {
 					HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, RESET);
 					rgb1_set(0, 0, 255);//niebieski
+					LCD1602_2ndLine();
+					LCD1602_print("stop recording");
 					break;
 				}
 				case 6: {
@@ -345,8 +357,8 @@ void read_bottoms()
 	    1 - zatrzymanie
 	    2 - odtworzenie
 	    3 - przesuniecie o 10 chwil
-	    4 - nagrywanie i zatrzymanie nagrywania
-	    5 - menu do wyboru utworu
+	    4 - nagrywanie
+	    5 - zatrzymanie nagrywania
 	    6 - wybranie utworu w tyl
 	    7 - wybranie utworu w przod
 
@@ -361,9 +373,9 @@ void petla()
 			 	// writeSD();
 			 	// readSD();
 					//LCD1602_1stLine();
-
-			 	LCD1602_Begin8BIT(RS_GPIO_Port, RS_Pin, E_Pin, D0_GPIO_Port, D0_Pin, D1_Pin, D2_Pin, D3_Pin, D4_GPIO_Port, D4_Pin, D5_Pin, D6_Pin, D7_Pin);
-				LCD1602_1stLine();
+		 	 	LCD1602_Begin8BIT(RS_GPIO_Port, RS_Pin, E_Pin, D0_GPIO_Port, D0_Pin, D1_Pin, D2_Pin, D3_Pin, D4_GPIO_Port, D4_Pin, D5_Pin, D6_Pin, D7_Pin);
+				//LCD1602_1stLine();
+				LCD1602_print("sprawdzam");
 
 
 
@@ -388,7 +400,8 @@ int main(void)
 
   /* MCU Configuration--------------------------------------------------------*/
 
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+
+/* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
 
   /* USER CODE BEGIN Init */
@@ -422,6 +435,10 @@ int main(void)
   //HAL_ADC_Start(&hadc2);
 
  // writeSD();
+
+  	//LCD1602_Begin8BIT(RS_GPIO_Port, RS_Pin, E_Pin, D0_GPIO_Port, D0_Pin, D1_Pin, D2_Pin, D3_Pin, D4_GPIO_Port, D4_Pin, D5_Pin, D6_Pin, D7_Pin);
+  	//LCD1602_print("sprzawdzam");
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -432,7 +449,7 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 	// set_volume();
-	 petla();
+	 //petla();
 
 
   }
