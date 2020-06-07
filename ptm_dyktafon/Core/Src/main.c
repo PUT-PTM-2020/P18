@@ -98,9 +98,9 @@ static void MX_TIM4_Init(void);
 /*---------------------Zapis na karte SD-----------------------*/
 void writeSD()
 {
-	HAL_GPIO_WritePin(GPIOD, GPIO_PIN_7, 0);
+	//HAL_GPIO_WritePin(GPIOD, GPIO_PIN_7, 0);
 	fresult = f_mount(&FatFs, "", 0);
-	fresult = f_open(&file, "write.txt", FA_OPEN_ALWAYS | FA_WRITE);
+	fresult = f_open(&file, "sprawdzam.txt", FA_OPEN_ALWAYS | FA_CREATE_ALWAYS | FA_WRITE);
 	int len = sprintf( buffer, "Hello PTM!\r\n");
 	fresult = f_write(&file, buffer, len, &bytes_written);
 	fresult = f_close (&file);
@@ -370,8 +370,8 @@ void read_bottoms()
 void petla()
 	{
 		//HAL_DAC_SetValue(&hdac,DAC_CHANNEL_1,DAC_ALIGN_12B_R,2048);
-			 	// writeSD();
-			 	// readSD();
+			 	 writeSD();
+			 	 readSD();
 					//LCD1602_1stLine();
 		 	 	LCD1602_Begin8BIT(RS_GPIO_Port, RS_Pin, E_Pin, D0_GPIO_Port, D0_Pin, D1_Pin, D2_Pin, D3_Pin, D4_GPIO_Port, D4_Pin, D5_Pin, D6_Pin, D7_Pin);
 				//LCD1602_1stLine();
@@ -434,7 +434,7 @@ int main(void)
   //HAL_ADC_Start(&hadc1);
   //HAL_ADC_Start(&hadc2);
 
- // writeSD();
+  writeSD();
 
   	//LCD1602_Begin8BIT(RS_GPIO_Port, RS_Pin, E_Pin, D0_GPIO_Port, D0_Pin, D1_Pin, D2_Pin, D3_Pin, D4_GPIO_Port, D4_Pin, D5_Pin, D6_Pin, D7_Pin);
   	//LCD1602_print("sprzawdzam");
@@ -449,7 +449,7 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 	// set_volume();
-	 //petla();
+	// petla();
 
 
   }
