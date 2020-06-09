@@ -191,7 +191,18 @@ void rgb2_set(uint8_t red)
 //do zrobienia
 void rgb2_set_intensity()
 {
-	rgb2_set(255);
+	if (x<0)
+	{
+		rgb2_set(155);
+	}
+	else if ((x>=0)&&(x<256))
+	{
+		rgb2_set(x);
+	}
+	else
+	{
+		rgb2_set(255);
+	}
 }
 
 /*-----Proba ustawienia janosci diody--------------*/
@@ -235,10 +246,10 @@ switch(x)
 /*----------Czytanie z przyciskow---------------*/
 void read_bottoms()
 {
-
-	  	 if (HAL_GPIO_ReadPin(GPIOE, GPIO_PIN_0)==GPIO_PIN_RESET)
+	rgb2_set_intensity();
+	  	 if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_7)==GPIO_PIN_RESET)
 	  	 	  	 			  	  	{selection=0;}
-	  	 if (HAL_GPIO_ReadPin(GPIOE, GPIO_PIN_1)==GPIO_PIN_RESET)
+	  	 if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_9)==GPIO_PIN_RESET)
 	  	 	  	  	 			  	{selection=1;}
 	  	 if (HAL_GPIO_ReadPin(GPIOE, GPIO_PIN_2)==GPIO_PIN_RESET)
 	  		  	  	  	  	 		{selection=2;}
@@ -430,6 +441,8 @@ int main(void)
   HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3);
   HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
   HAL_TIM_Base_Start_IT(&htim5);
+  HAL_SPI_Init(&hspi1);
+  HAL_SPI_IRQHandler(&hspi1);
   //HAL_DAC_Start(&hdac,DAC_CHANNEL_1);
   //HAL_ADC_Start(&hadc1);
   //HAL_ADC_Start(&hadc2);
@@ -449,7 +462,7 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 	// set_volume();
-	// petla();
+ petla();
 
 
   }
