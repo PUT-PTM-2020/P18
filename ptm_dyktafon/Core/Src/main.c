@@ -99,8 +99,8 @@ static void MX_TIM4_Init(void);
 void writeSD()
 {
 	//HAL_GPIO_WritePin(GPIOD, GPIO_PIN_7, 0);
-	fresult = f_mount(&FatFs, "", 0);
-	fresult = f_open(&file, "sprawdzam.txt", FA_OPEN_ALWAYS | FA_CREATE_ALWAYS | FA_WRITE);
+	//fresult = f_mount(&FatFs, "", 0);
+	fresult = f_open(&file, "plik1234.txt", FA_OPEN_ALWAYS | FA_CREATE_ALWAYS | FA_WRITE); //nazwa pliku moze miec maksymalnie 12 znakow z rozszerzeniem
 	int len = sprintf( buffer, "Hello PTM!\r\n");
 	fresult = f_write(&file, buffer, len, &bytes_written);
 	fresult = f_close (&file);
@@ -109,8 +109,8 @@ void writeSD()
 /*---------------------Odczyt na karcie SD-----------------------*/
 void readSD()
 {
-	fresult = f_mount(&FatFs, "", 0);
-	fresult = f_open(&file, "read.txt", FA_READ);
+	//fresult = f_mount(&FatFs, "", 0);
+	fresult = f_open(&file, "WRITE1.txt", FA_READ);
 	fresult = f_read(&file, buffer, 16, &bytes_read);
 	fresult = f_close(&file);
 
@@ -411,8 +411,7 @@ int main(void)
 
   /* MCU Configuration--------------------------------------------------------*/
 
-
-/* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
 
   /* USER CODE BEGIN Init */
@@ -436,18 +435,20 @@ int main(void)
   MX_ADC1_Init();
   MX_TIM4_Init();
   /* USER CODE BEGIN 2 */
+  HAL_DAC_Start(&hdac,DAC_CHANNEL_2);
   HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
   HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
   HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3);
   HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
   HAL_TIM_Base_Start_IT(&htim5);
-  HAL_SPI_Init(&hspi1);
-  HAL_SPI_IRQHandler(&hspi1);
-  //HAL_DAC_Start(&hdac,DAC_CHANNEL_1);
+  //HAL_SPI_Init(&hspi1);
+ // HAL_SPI_IRQHandler(&hspi1);
+
   //HAL_ADC_Start(&hadc1);
   //HAL_ADC_Start(&hadc2);
-
-  writeSD();
+  fresult = f_mount(&FatFs, "", 0);
+//readSD();
+writeSD();
 
   	//LCD1602_Begin8BIT(RS_GPIO_Port, RS_Pin, E_Pin, D0_GPIO_Port, D0_Pin, D1_Pin, D2_Pin, D3_Pin, D4_GPIO_Port, D4_Pin, D5_Pin, D6_Pin, D7_Pin);
   	//LCD1602_print("sprzawdzam");
@@ -590,6 +591,12 @@ static void MX_DAC_Init(void)
   sConfig.DAC_Trigger = DAC_TRIGGER_NONE;
   sConfig.DAC_OutputBuffer = DAC_OUTPUTBUFFER_ENABLE;
   if (HAL_DAC_ConfigChannel(&hdac, &sConfig, DAC_CHANNEL_1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /** DAC channel OUT2 config 
+  */
+  if (HAL_DAC_ConfigChannel(&hdac, &sConfig, DAC_CHANNEL_2) != HAL_OK)
   {
     Error_Handler();
   }
