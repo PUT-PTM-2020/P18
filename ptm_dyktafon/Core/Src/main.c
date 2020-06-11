@@ -67,15 +67,14 @@ double V=2.95;
 
 /*-----------zmienne potrzebne do odtwarzania-------------*/
 int recording = 0;
-int16_t data_chunk[250];
-int data_iterator =0;
+
 /*------------zmienne do ... --------------*/
 volatile int16_t x=0;
 volatile int y=0;
 volatile int z=100;
 volatile int selection=-1;
 /*-------------Zmienne potrzebne do zapisu i odczytu na kacie pamieci-------------------------------*/
-char buffer[256]; //bufor odczytu i zapisu
+char buffer[CHUNK_SIZE]; //bufor odczytu i zapisu
 static FATFS FatFs; //uchwyt do urządzenia FatFs (dysku, karty SD...)
 FRESULT fresult; //do przechowywania wyniku operacji na bibliotece FatFs
 FIL file; //uchwyt do otwartego pliku
@@ -117,9 +116,6 @@ void readSD()
 
 }
 
-
-
-
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef*htim)
 {
 	/*--------------------Odczyt z mikrofonu------------------*/
@@ -132,11 +128,13 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef*htim)
 			  {
 				  adc_value = HAL_ADC_GetValue(&hadc1);
 				  x = (int16_t)(2.95/(double)4096) * adc_value;
-				  data_chunk[data_iterator] = x;
+				  data_chunk[data_iterator]  = x;
 				  data_iterator++;
-				  if (data_iterator == 250)
+				  if (data_iterator >= CHUNK_SIZE -1)
 					  {
 					  SaveChunk(file_name, data_chunk);
+					  data_iterator = 0;
+					  // tu jeszcze można policzyć średnią z tego fragmentu danych i na podstawie tego ocenić głośność, i ustawić zmienną sterującą diodą
 					  }
 			  }
 		}
@@ -145,6 +143,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef*htim)
 	/*--------------------Odwarzanie z glosniczka------------------*/
 	if(htim->Instance== TIM5)
 		{
+
 			if(sample!=123200-1/*utwor.size()*/)
 			{
 				HAL_DAC_SetValue(&hdac,DAC_CHANNEL_2,DAC_ALIGN_12B_R,rawAudio[(int)sample]/**volume*/);
@@ -152,7 +151,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef*htim)
 				sample++;
 			}
 			else {sample=0;}
-
 		}
 
 	/*-----Proba ustawienia janosci diody--------------*/
@@ -201,7 +199,6 @@ void set_volume()
 	  {
 		  value = HAL_ADC_GetValue(&hadc1);
 		  volume=(V/(double)4096)*value*10;
-
 	  }
 
 }

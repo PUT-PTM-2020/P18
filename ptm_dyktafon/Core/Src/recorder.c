@@ -7,10 +7,14 @@
 
 #include <recorder.h>
 
-const uint16_t SAMPLE_RATE = 8000;
+const uint32_t SAMPLE_RATE = 8000;
 const uint16_t BITS_PER_SAMPLE = 16;
+const uint16_t CHUNK_SIZE = 256;
+int16_t data_chunk[CHUNK_SIZE];
+volatile int data_iterator = 0;
 
-
+//funkcja musi być uruchomiona na początku i na końcu nagrania żeby przygotować miejsce na nagłowek
+// oraz nadpisać go odpoweidnimi danymi
 int AddWaveHeader(char* file_path)
 {
 	FIL *f;
@@ -23,7 +27,7 @@ int AddWaveHeader(char* file_path)
 		return 1;
 	}
 	// sprawdzenie rozmiaru pliku
-	int data_size = f_size(f);
+	uint32_t data_size = f_size(f) - 44;
 	/* write chunkID, must be 'RIFF'  ------------------------------------------*/
 	  wave_header[0] = 'R';
 	  wave_header[1] = 'I';
@@ -31,11 +35,11 @@ int AddWaveHeader(char* file_path)
 	  wave_header[3] = 'F';
 
 	  /*CHUNK_SIZE - Write the file length */
-	  int file_size = data_size + 36;
-	  wave_header[4]  = (uint8_t)((file_size & 0xFF));
-	  wave_header[5]  = (uint8_t)((file_size >> 8) & 0xFF);
-	  wave_header[6]  = (uint8_t)((file_size >> 16) & 0xFF);
-	  wave_header[7]  = (uint8_t)((file_size >> 24) & 0xFF);
+	  int ChunkSize = data_size + 36;
+	  wave_header[4]  = (uint8_t)((ChunkSize & 0xFF));
+	  wave_header[5]  = (uint8_t)((ChunkSize >> 8) & 0xFF);
+	  wave_header[6]  = (uint8_t)((ChunkSize >> 16) & 0xFF);
+	  wave_header[7]  = (uint8_t)((ChunkSize >> 24) & 0xFF);
 
 
 	  /*FORMAT - Write the file format, must be 'WAVE' */
@@ -107,10 +111,9 @@ int AddWaveHeader(char* file_path)
 int SaveChunk(char* file_path, int16_t data[])
 {
 	FIL* f;
-	uint32_t chunk_size = 256;
 	f_open(f, file_path, FA_OPEN_APPEND | FA_WRITE);
 	uint16_t bw;
-	f_write(f, data, chunk_size, &bw);
-	if (bw!=44) return 1;
+	f_write(f, data, CHUNK_SIZE, &bw);
+	if (CHUN_SIZE!=bw) return 1;
 	return 0;
 }
