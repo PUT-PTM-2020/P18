@@ -119,9 +119,10 @@ void readSD()
 
 
 
-/*--------------------Odczyt z mikrofonu------------------*/
+
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef*htim)
 {
+	/*--------------------Odczyt z mikrofonu------------------*/
 	if(htim->Instance== TIM4)
 	{
 		if (recording)
@@ -146,7 +147,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef*htim)
 		{
 			if(sample!=123200-1/*utwor.size()*/)
 			{
-				HAL_DAC_SetValue(&hdac,DAC_CHANNEL_2,DAC_ALIGN_12B_R,rawAudio[(int)sample]);
+				HAL_DAC_SetValue(&hdac,DAC_CHANNEL_2,DAC_ALIGN_12B_R,rawAudio[(int)sample]/**volume*/);
 				//HAL_DAC_SetValue(&hdac,DAC_CHANNEL_1,DAC_ALIGN_12B_R,rawAudio[sample]*volume);
 				sample++;
 			}
@@ -157,37 +158,36 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef*htim)
 	/*-----Proba ustawienia janosci diody--------------*/
 	if(htim->Instance== TIM2)
 			{
-			rgb2_set(255);
-			y=100;
-				switch(stan_diody)
-					{
-
-						case 0:
-							TIM2->CCR1=2100;
-							stan_diody++;
-							break;
-						case 1:
-							TIM2->CCR1=2100-2*y;
-							stan_diody++;
-							break;
-						case 2:
-							TIM2->CCR1=2100-4*y;
-								stan_diody++;
-								break;
-						case 3:
-							TIM2->CCR1=2100-6*y;
-								stan_diody++;
-								break;
-						case 4:
-							TIM2->CCR1=2100-8*y;
-								stan_diody++;
-								break;
-						case 5:
-							TIM2->CCR1=2100-10*y;
-								stan_diody=0;
-								break;
-								}
-						}
+					rgb2_set(255);
+					y=100;
+						switch(stan_diody)
+							{
+								case 0:
+									TIM2->CCR1=2100;
+									stan_diody++;
+									break;
+								case 1:
+									TIM2->CCR1=2100-2*y;
+									stan_diody++;
+									break;
+								case 2:
+									TIM2->CCR1=2100-4*y;
+										stan_diody++;
+										break;
+								case 3:
+									TIM2->CCR1=2100-6*y;
+										stan_diody++;
+										break;
+								case 4:
+									TIM2->CCR1=2100-8*y;
+										stan_diody++;
+										break;
+								case 5:
+									TIM2->CCR1=2100-10*y;
+										stan_diody=0;
+										break;
+							}
+			}
 }
 
 
@@ -381,14 +381,15 @@ void read_bottoms()
 void petla()
 	{
 		//HAL_DAC_SetValue(&hdac,DAC_CHANNEL_1,DAC_ALIGN_12B_R,2048);
-			 	 writeSD();
-			 	 readSD();
+			 	 //writeSD(); //dziala
+			 	 //readSD(); // dziala
+			 	set_volume();
 					//LCD1602_1stLine();
 		 	 	LCD1602_Begin8BIT(RS_GPIO_Port, RS_Pin, E_Pin, D0_GPIO_Port, D0_Pin, D1_Pin, D2_Pin, D3_Pin, D4_GPIO_Port, D4_Pin, D5_Pin, D6_Pin, D7_Pin);
 				//LCD1602_1stLine();
 				LCD1602_print("sprawdzam");
 
-
+					//rgb2_set(255);
 
 			 	  read_bottoms();
 	}
@@ -452,7 +453,7 @@ writeSD();
 
   	//LCD1602_Begin8BIT(RS_GPIO_Port, RS_Pin, E_Pin, D0_GPIO_Port, D0_Pin, D1_Pin, D2_Pin, D3_Pin, D4_GPIO_Port, D4_Pin, D5_Pin, D6_Pin, D7_Pin);
   	//LCD1602_print("sprzawdzam");
-
+rgb2_set(255);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -462,7 +463,7 @@ writeSD();
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	// set_volume();
+
  petla();
 
 
