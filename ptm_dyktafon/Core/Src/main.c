@@ -61,6 +61,7 @@ uint16_t adc_value;
 /*------Zmienne potrzebne do glosnika----------*/
 double sample=0;
 double volume=0;
+volatile uint8_t stan_diody =0;
 uint16_t value;
 double V=2.95;
 
@@ -139,23 +140,57 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef*htim)
 			  }
 		}
 	}
-}
 
-/*--------------------Odwarzanie z glosniczka------------------*/
-void HAL_TIM_PeriodElapsedCallback1(TIM_HandleTypeDef*htim)
-{
+	/*--------------------Odwarzanie z glosniczka------------------*/
 	if(htim->Instance== TIM5)
-	{
-		if(sample!=123200-1/*utwor.size()*/)
 		{
-			HAL_DAC_SetValue(&hdac,DAC_CHANNEL_1,DAC_ALIGN_12B_R,rawAudio[(int)sample]);
-			//HAL_DAC_SetValue(&hdac,DAC_CHANNEL_1,DAC_ALIGN_12B_R,rawAudio[sample]*volume);
-			sample++;
-		}
-		else {sample=0;}
+			if(sample!=123200-1/*utwor.size()*/)
+			{
+				HAL_DAC_SetValue(&hdac,DAC_CHANNEL_2,DAC_ALIGN_12B_R,rawAudio[(int)sample]);
+				//HAL_DAC_SetValue(&hdac,DAC_CHANNEL_1,DAC_ALIGN_12B_R,rawAudio[sample]*volume);
+				sample++;
+			}
+			else {sample=0;}
 
-	}
+		}
+
+	/*-----Proba ustawienia janosci diody--------------*/
+	if(htim->Instance== TIM2)
+			{
+			rgb2_set(255);
+			y=100;
+				switch(stan_diody)
+					{
+
+						case 0:
+							TIM2->CCR1=2100;
+							stan_diody++;
+							break;
+						case 1:
+							TIM2->CCR1=2100-2*y;
+							stan_diody++;
+							break;
+						case 2:
+							TIM2->CCR1=2100-4*y;
+								stan_diody++;
+								break;
+						case 3:
+							TIM2->CCR1=2100-6*y;
+								stan_diody++;
+								break;
+						case 4:
+							TIM2->CCR1=2100-8*y;
+								stan_diody++;
+								break;
+						case 5:
+							TIM2->CCR1=2100-10*y;
+								stan_diody=0;
+								break;
+								}
+						}
 }
+
+
 /*--------------------Ustalanie glosnosci------------------*/
 void set_volume()
 {
@@ -205,43 +240,8 @@ void rgb2_set_intensity()
 	}
 }
 
-/*-----Proba ustawienia janosci diody--------------*/
-void HAL_TIM_PeriodElapsedCallback_DiodeRGB2(TIM_HandleTypeDef*htim)
-{
-	if(htim->Instance== TIM2)
-		{
-		rgb2_set(255);
-		y=100;
-switch(x)
-	{
 
-	case 0:
-		TIM2->CCR1=2100;
-		x++;
-		break;
-	case 1:
-		TIM2->CCR1=2100-2*y;
-		x++;
-		break;
-	case 2:
-		TIM2->CCR1=2100-4*y;
-			x++;
-			break;
-	case 3:
-		TIM2->CCR1=2100-6*y;
-			x++;
-			break;
-	case 4:
-		TIM2->CCR1=2100-8*y;
-			x++;
-			break;
-	case 5:
-		TIM2->CCR1=2100-10*y;
-			x=0;
-			break;
-			}
-		}
-}
+
 
 /*----------Czytanie z przyciskow---------------*/
 void read_bottoms()
