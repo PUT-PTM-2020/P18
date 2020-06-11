@@ -114,6 +114,7 @@ int SaveChunk(char* file_path, int16_t data[])
 	f_open(f, file_path, FA_OPEN_APPEND | FA_WRITE);
 	uint16_t bw;
 	f_write(f, data, CHUNK_SIZE, &bw);
+	f_close(f);
 	if (CHUN_SIZE!=bw) return 1;
 	return 0;
 }

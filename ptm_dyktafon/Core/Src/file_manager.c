@@ -34,9 +34,8 @@ char* GetNextFileName()
 
 	 ID++;
 	 char *c;
-	   sprintf(c, "%d", ID);
-	   strcat(c,".wav");
-	   printf("%s",c);
+	 sprintf(c, "%d", ID);
+	 strcat(c,".wav");
 	 return c;
 }
 
@@ -51,34 +50,39 @@ char * NextFile(char* file_name)
 	if (res == FR_OK) {
 		 for (;;) {
 			 res = f_readdir(&dir, &fno);                   /* Read a directory item */
-			 if (res != FR_OK || fno.fname[0] == 0) break;  /* Break on error or end of dir */
-			 if (file_name == fno.fname){
+			 if (res != FR_OK) break;  /* Break on error*/
+			 if (!strcmp(file_name, fno.fname)){
+				 char *prev = malloc(strlen(fno.name));
+				 strcpy(prev, fno.name);
 				 res = f_readdir(&dir, &fno);
+				 if (res != FR_OK || fno.fname[0] == 0) break;
+				 f_closedir(&dir);
 				 return fno.fname;
 			 }
 		 }
 		 f_closedir(&dir);
 	 }
-	 return fno.fname;
+	 return prev;
 }
-char * PreviousFile(char* file_name)
+char * PreviousFile(char* file_name) // to jeszcze do poprawki
 {
 	FRESULT res;
 	DIR dir;
 	static FILINFO fno;
 	char* path="/";
-	char* previous_name;
+	char* previous_name = malloc(strlen(file_name));
 
 	res = f_opendir(&dir, path);                       /* Open the directory */
 	if (res == FR_OK) {
 		 for (;;) {
+			 previous_name = malloc(strlen(file_name));
 			 res = f_readdir(&dir, &fno);                   /* Read a directory item */
 			 if (res != FR_OK || fno.fname[0] == 0) break;  /* Break on error or end of dir */
-			 if (file_name == fno.fname){
+			 if (!strcmp(file_name, fno.fname)){
 				 res = f_readdir(&dir, &fno);
 				 return previous_name;
 			 }
-			 previous_name = fno.fname;
+
 		 }
 		 f_closedir(&dir);
 	 }

@@ -64,9 +64,11 @@ double volume=0;
 volatile uint8_t stan_diody =0;
 uint16_t value;
 double V=2.95;
+volatile int playing = 0;
+uint32_t file_size = 0;
 
-/*-----------zmienne potrzebne do odtwarzania-------------*/
-int recording = 0;
+/*-----------zmienne potrzebne do nagrywania-------------*/
+volatile int recording = 0;
 
 /*------------zmienne do ... --------------*/
 volatile int16_t x=0;
@@ -115,7 +117,18 @@ void readSD()
 	fresult = f_close(&file);
 
 }
-
+/*------------------------Odczyt jednego fragmentu danych------------*/
+int ReadChunk(char* file_path, int16_t data[], uint_32 sample)
+{
+	FIL* f;
+	f_open(f, file_path, FA_READ);
+	uint16_t br;
+	f_lseek(f, sample + 44);
+	f_read(f, data, CHUNK_SIZE, &br);
+	f_close(f);
+	if (CHUN_SIZE != br) return 1;
+	return 0;
+}
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef*htim)
 {
 	/*--------------------Odczyt z mikrofonu------------------*/
@@ -130,7 +143,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef*htim)
 				  x = (int16_t)(2.95/(double)4096) * adc_value;
 				  data_chunk[data_iterator]  = x;
 				  data_iterator++;
-				  if (data_iterator >= CHUNK_SIZE -1)
+				  if (data_iterator >= CHUNK_SIZE - 1)
 					  {
 					  SaveChunk(file_name, data_chunk);
 					  data_iterator = 0;
@@ -143,14 +156,33 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef*htim)
 	/*--------------------Odwarzanie z glosniczka------------------*/
 	if(htim->Instance== TIM5)
 		{
-
-			if(sample!=123200-1/*utwor.size()*/)
+			if(playing)
 			{
-				HAL_DAC_SetValue(&hdac,DAC_CHANNEL_2,DAC_ALIGN_12B_R,rawAudio[(int)sample]/**volume*/);
-				//HAL_DAC_SetValue(&hdac,DAC_CHANNEL_1,DAC_ALIGN_12B_R,rawAudio[sample]*volume);
-				sample++;
+				if(sample <= file_size)
+				{
+					HAL_DAC_SetValue(&hdac, DAC_CHANNEL_2, DAC_ALIGN_12B_R, data_chunk[data_iterator] /**volume*/);
+					data_iterator++;
+					if (data_iterator >= CHUNK_SIZE - 1)
+					{
+						sample += CHUNK_SIZE;
+						ReadChunk(file_name, data_chunk,sample);
+						data_iterator = 0;
+					 }
+				}
+				else
+				{
+					sample = 0;
+					playing = 0;
+				}
+
+				//if(sample!=123200-1/*utwor.size()*/)
+				//{
+				//	HAL_DAC_SetValue(&hdac,DAC_CHANNEL_2,DAC_ALIGN_12B_R,rawAudio[(int)sample]/**volume*/);
+				//	//HAL_DAC_SetValue(&hdac,DAC_CHANNEL_1,DAC_ALIGN_12B_R,rawAudio[sample]*volume);
+				//	sample++;
+				//}
+				//else {sample=0;}
 			}
-			else {sample=0;}
 		}
 
 	/*-----Proba ustawienia janosci diody--------------*/
@@ -188,7 +220,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef*htim)
 			}
 }
 
-
 /*--------------------Ustalanie glosnosci------------------*/
 void set_volume()
 {
@@ -200,7 +231,6 @@ void set_volume()
 		  value = HAL_ADC_GetValue(&hadc1);
 		  volume=(V/(double)4096)*value*10;
 	  }
-
 }
 
 /*-------------------Konfiguracja diody RGB1----------------------------*/
@@ -265,9 +295,9 @@ void read_bottoms()
 	  	  {
 				 case 0: {
 					  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, SET);
-					  if ((sample<10)&&(sample>0))
+					  if (sample < 10 * SAMPLE_RATE)
 						  {
-							  sample=0;
+							  sample = 0;
 						  }
 					  else if (sample==0)
 						  {
@@ -275,7 +305,7 @@ void read_bottoms()
 						  }
 					  else
 						  {
-						  sample=sample-10;
+						  sample -= 10 * SAMPLE_RATE;
 						  LCD1602_2ndLine();
 						  LCD1602_print("-10");
 						  }
@@ -300,13 +330,14 @@ void read_bottoms()
 						}
 				case 3: {
 					 HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, RESET);
-					 if (sample+10>123200/*utwor.size()*/)
+					 if (sample + 10 * SAMPLE_RATE > file_size)
 					 {
 						 sample=0;
+						 plaiyng = 0;
 					 }
 					 else
 					 {
-						sample=sample+10;
+						sample += 10 * SAMPLE_RATE;
 						LCD1602_2ndLine();
 						LCD1602_print("+10");
 					 }
