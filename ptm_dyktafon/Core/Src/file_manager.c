@@ -5,6 +5,7 @@
  *      Author: stach
  */
 #include "ff.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -34,6 +35,7 @@ char* GetNextFileName()
 
 	 ID++;
 	 char *c;
+	 c=malloc(8);
 	 sprintf(c, "%d", ID);
 	 strcat(c,".wav");
 	 return c;
@@ -45,15 +47,16 @@ char * NextFile(char* file_name)
 	DIR dir;
 	static FILINFO fno;
 	char* path="/";
-
+	char * prev;
 	res = f_opendir(&dir, path);                       /* Open the directory */
 	if (res == FR_OK) {
 		 for (;;) {
 			 res = f_readdir(&dir, &fno);                   /* Read a directory item */
 			 if (res != FR_OK) break;  /* Break on error*/
 			 if (!strcmp(file_name, fno.fname)){
-				 char *prev = malloc(strlen(fno.name));
-				 strcpy(prev, fno.name);
+				 free(prev);
+				 prev = malloc(strlen(fno.fname));
+				 strcpy(prev, fno.fname);
 				 res = f_readdir(&dir, &fno);
 				 if (res != FR_OK || fno.fname[0] == 0) break;
 				 f_closedir(&dir);

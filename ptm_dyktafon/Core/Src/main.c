@@ -27,7 +27,12 @@
 #include "STM_MY_LCD16X2.h"
 #include "file_manager.h"
 #include "recorder.h"
+
+#define CHUNK_SIZE 256
 extern const uint8_t rawAudio[123200];
+int16_t data_chunk[CHUNK_SIZE];
+extern volatile int data_iterator;
+extern const uint32_t SAMPLE_RATE;
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -46,6 +51,7 @@ extern const uint8_t rawAudio[123200];
 
 /* Private variables ---------------------------------------------------------*/
 ADC_HandleTypeDef hadc1;
+ADC_HandleTypeDef hadc2;
 
 DAC_HandleTypeDef hdac;
 
@@ -61,7 +67,7 @@ uint16_t adc_value;
 /*------Zmienne potrzebne do glosnika----------*/
 double sample=0;
 double volume=0;
-volatile uint8_t stan_diody =0;
+volatile uint8_t diode_state =0;
 uint16_t value;
 double V=2.95;
 volatile int playing = 0;
@@ -76,7 +82,7 @@ volatile int y=0;
 volatile int z=100;
 volatile int selection=-1;
 /*-------------Zmienne potrzebne do zapisu i odczytu na kacie pamieci-------------------------------*/
-char buffer[CHUNK_SIZE]; //bufor odczytu i zapisu
+char buffer[256]; //bufor odczytu i zapisu
 static FATFS FatFs; //uchwyt do urządzenia FatFs (dysku, karty SD...)
 FRESULT fresult; //do przechowywania wyniku operacji na bibliotece FatFs
 FIL file; //uchwyt do otwartego pliku
@@ -95,6 +101,7 @@ static void MX_DAC_Init(void);
 static void MX_TIM5_Init(void);
 static void MX_ADC1_Init(void);
 static void MX_TIM4_Init(void);
+static void MX_ADC2_Init(void);
 /* USER CODE BEGIN PFP */
 
 /*---------------------Zapis na karte SD-----------------------*/
@@ -102,7 +109,7 @@ void writeSD()
 {
 	//HAL_GPIO_WritePin(GPIOD, GPIO_PIN_7, 0);
 	//fresult = f_mount(&FatFs, "", 0);
-	fresult = f_open(&file, "plik1234.txt", FA_OPEN_ALWAYS | FA_CREATE_ALWAYS | FA_WRITE); //nazwa pliku moze miec maksymalnie 12 znakow z rozszerzeniem
+	fresult = f_open(&file, "plik1234.wav", FA_OPEN_ALWAYS | FA_CREATE_ALWAYS | FA_WRITE); //nazwa pliku moze miec maksymalnie 12 znakow z rozszerzeniem
 	int len = sprintf( buffer, "Hello PTM!\r\n");
 	fresult = f_write(&file, buffer, len, &bytes_written);
 	fresult = f_close (&file);
@@ -118,7 +125,7 @@ void readSD()
 
 }
 /*------------------------Odczyt jednego fragmentu danych------------*/
-int ReadChunk(char* file_path, int16_t data[], uint_32 sample)
+int ReadChunk(char* file_path, int16_t data[], uint32_t sample)
 {
 	FIL* f;
 	f_open(f, file_path, FA_READ);
@@ -126,10 +133,10 @@ int ReadChunk(char* file_path, int16_t data[], uint_32 sample)
 	f_lseek(f, sample + 44);
 	f_read(f, data, CHUNK_SIZE, &br);
 	f_close(f);
-	if (CHUN_SIZE != br) return 1;
+	if (CHUNK_SIZE != br) return 1;
 	return 0;
 }
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef*htim)
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef*htim) //2,5,4 timer wykorzystany 3 do diody1
 {
 	/*--------------------Odczyt z mikrofonu------------------*/
 	if(htim->Instance== TIM4)
@@ -160,7 +167,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef*htim)
 			{
 				if(sample <= file_size)
 				{
-					HAL_DAC_SetValue(&hdac, DAC_CHANNEL_2, DAC_ALIGN_12B_R, data_chunk[data_iterator] /**volume*/);
+					HAL_DAC_SetValue(&hdac, DAC_CHANNEL_2, DAC_ALIGN_12B_R, (int16_t)data_chunk[data_iterator]*volume);
 					data_iterator++;
 					if (data_iterator >= CHUNK_SIZE - 1)
 					{
@@ -190,31 +197,31 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef*htim)
 			{
 					rgb2_set(255);
 					y=100;
-						switch(stan_diody)
+						switch(diode_state)
 							{
 								case 0:
 									TIM2->CCR1=2100;
-									stan_diody++;
+									diode_state++;
 									break;
 								case 1:
 									TIM2->CCR1=2100-2*y;
-									stan_diody++;
+									diode_state++;
 									break;
 								case 2:
 									TIM2->CCR1=2100-4*y;
-										stan_diody++;
+										diode_state++;
 										break;
 								case 3:
 									TIM2->CCR1=2100-6*y;
-										stan_diody++;
+										diode_state++;
 										break;
 								case 4:
 									TIM2->CCR1=2100-8*y;
-										stan_diody++;
+										diode_state++;
 										break;
 								case 5:
 									TIM2->CCR1=2100-10*y;
-										stan_diody=0;
+										diode_state=0;
 										break;
 							}
 			}
@@ -225,11 +232,12 @@ void set_volume()
 {
 
 	V=2.95;
-	  HAL_ADC_Start(&hadc1);
-	  if(HAL_ADC_PollForConversion(&hadc1, 10) == HAL_OK)
+	  HAL_ADC_Start(&hadc2);
+	  if(HAL_ADC_PollForConversion(&hadc2, 10) == HAL_OK)
 	  {
-		  value = HAL_ADC_GetValue(&hadc1);
-		  volume=(V/(double)4096)*value*10;
+		  value = HAL_ADC_GetValue(&hadc2);
+		  volume = 0.5 + value/(double)4096;
+
 	  }
 }
 
@@ -333,7 +341,7 @@ void read_bottoms()
 					 if (sample + 10 * SAMPLE_RATE > file_size)
 					 {
 						 sample=0;
-						 plaiyng = 0;
+						 playing = 0;
 					 }
 					 else
 					 {
@@ -463,6 +471,7 @@ int main(void)
   MX_TIM5_Init();
   MX_ADC1_Init();
   MX_TIM4_Init();
+  MX_ADC2_Init();
   /* USER CODE BEGIN 2 */
   HAL_DAC_Start(&hdac,DAC_CHANNEL_2);
   HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
@@ -470,11 +479,9 @@ int main(void)
   HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3);
   HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
   HAL_TIM_Base_Start_IT(&htim5);
-  //HAL_SPI_Init(&hspi1);
- // HAL_SPI_IRQHandler(&hspi1);
 
-  //HAL_ADC_Start(&hadc1);
-  //HAL_ADC_Start(&hadc2);
+  HAL_ADC_Start(&hadc1);
+  HAL_ADC_Start(&hadc2);
   fresult = f_mount(&FatFs, "", 0);
 //readSD();
 writeSD();
@@ -588,6 +595,56 @@ static void MX_ADC1_Init(void)
   /* USER CODE BEGIN ADC1_Init 2 */
 
   /* USER CODE END ADC1_Init 2 */
+
+}
+
+/**
+  * @brief ADC2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_ADC2_Init(void)
+{
+
+  /* USER CODE BEGIN ADC2_Init 0 */
+
+  /* USER CODE END ADC2_Init 0 */
+
+  ADC_ChannelConfTypeDef sConfig = {0};
+
+  /* USER CODE BEGIN ADC2_Init 1 */
+
+  /* USER CODE END ADC2_Init 1 */
+  /** Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion) 
+  */
+  hadc2.Instance = ADC2;
+  hadc2.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
+  hadc2.Init.Resolution = ADC_RESOLUTION_12B;
+  hadc2.Init.ScanConvMode = DISABLE;
+  hadc2.Init.ContinuousConvMode = DISABLE;
+  hadc2.Init.DiscontinuousConvMode = DISABLE;
+  hadc2.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
+  hadc2.Init.ExternalTrigConv = ADC_SOFTWARE_START;
+  hadc2.Init.DataAlign = ADC_DATAALIGN_RIGHT;
+  hadc2.Init.NbrOfConversion = 1;
+  hadc2.Init.DMAContinuousRequests = DISABLE;
+  hadc2.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
+  if (HAL_ADC_Init(&hadc2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time. 
+  */
+  sConfig.Channel = ADC_CHANNEL_6;
+  sConfig.Rank = 1;
+  sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
+  if (HAL_ADC_ConfigChannel(&hadc2, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN ADC2_Init 2 */
+
+  /* USER CODE END ADC2_Init 2 */
 
 }
 

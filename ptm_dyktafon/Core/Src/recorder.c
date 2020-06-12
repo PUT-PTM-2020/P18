@@ -9,8 +9,7 @@
 
 const uint32_t SAMPLE_RATE = 8000;
 const uint16_t BITS_PER_SAMPLE = 16;
-const uint16_t CHUNK_SIZE = 256;
-int16_t data_chunk[CHUNK_SIZE];
+int CHUNK_SIZE = 256;
 volatile int data_iterator = 0;
 
 //funkcja musi być uruchomiona na początku i na końcu nagrania żeby przygotować miejsce na nagłowek
@@ -115,6 +114,6 @@ int SaveChunk(char* file_path, int16_t data[])
 	uint16_t bw;
 	f_write(f, data, CHUNK_SIZE, &bw);
 	f_close(f);
-	if (CHUN_SIZE!=bw) return 1;
+	if (CHUNK_SIZE!=bw) return 1;
 	return 0;
 }

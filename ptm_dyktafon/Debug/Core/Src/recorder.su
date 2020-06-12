@@ -1,2 +1,2 @@
-recorder.c:14:5:AddWaveHeader	216	static
-recorder.c:107:5:SaveChunk	32	static
+recorder.c:17:5:AddWaveHeader	216	static
+recorder.c:110:5:SaveChunk	24	static
