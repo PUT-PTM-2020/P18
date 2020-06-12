@@ -81,6 +81,7 @@ volatile int16_t x=0;
 volatile int y=0;
 volatile int z=100;
 volatile int selection=-1;
+volatile int last_selection=-1;
 /*-------------Zmienne potrzebne do zapisu i odczytu na kacie pamieci-------------------------------*/
 char buffer[256]; //bufor odczytu i zapisu
 static FATFS FatFs; //uchwyt do urządzenia FatFs (dysku, karty SD...)
@@ -275,13 +276,126 @@ void rgb2_set_intensity()
 	}
 }
 
+void select_button(int selection)
+{
+	  switch(selection)
+		  	  {
+					 case 0: {
+						  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, SET);
+						  if (sample < 10 * SAMPLE_RATE)
+							  {
+								  sample = 0;
+							  }
+						  else if (sample==0)
+							  {
+								  //poprzedni utwor
+							  }
+						  else
+							  {
+							  sample -= 10 * SAMPLE_RATE;
+							  LCD1602_2ndLine();
+							  LCD1602_print("-10");
+							  }
 
+						  break;
+							}
+					case 1: {
+						  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_9, RESET);
+						  sample=sample+0;
+						  LCD1602_2ndLine();
+						  LCD1602_print("stop");
+						  rgb1_set(255, 255, 0); //pomaranczowy
+						  break;
+							}
+					case 2: {
+						  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, SET);
+						  sample++;
+						  LCD1602_2ndLine();
+						  LCD1602_print("start");
+						  rgb1_set(0, 255, 0); //zielony
+						  break;
+							}
+					case 3: {
+						 HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, RESET);
+						 if (sample + 10 * SAMPLE_RATE > file_size)
+						 {
+							 sample=0;
+							 playing = 0;
+						 }
+						 else
+						 {
+							sample += 10 * SAMPLE_RATE;
+							LCD1602_2ndLine();
+							LCD1602_print("+10");
+						 }
+						break;
+							}
+					case 4: {
+						HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, SET);
+						LCD1602_2ndLine();
+						LCD1602_print("recording");
+						rgb1_set(255, 0, 0);//czerwony
+						if (recording)
+							{
+							recording = 0;
+							AddWaveHeader(file_name); // nadpisuje nagłówek
+							}
+						else
+						{
+							file_name = GetNextFileName();
+							AddWaveHeader(file_name); // dodaje  nagłówek
+							recording = 1;
+						}
+						break;
+						}
+					case 5: {
+						HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, RESET);
+						rgb1_set(0, 0, 255);//niebieski
+						LCD1602_2ndLine();
+						LCD1602_print("stop recording");
+						break;
+					}
+					case 6: {
+						if (atoi(file_name)>0)
+						{
+							file_name = PreviousFile(file_name);
+							fresult = f_close (&file);
+							fresult = f_open(&file, file_name, FA_READ);
+							HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, SET);
+						}
+						break;
+					}
+					case 7: {
+						file_name = NextFile(file_name);
+						fresult = f_open(&file, file_name, FA_READ);
+						HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, RESET);
+						break;
+					}
+					default: {HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12|GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_15, RESET);
+								break;}
+
+		  	  }
+
+		  /*-----------selection---------------*/
+		  /*wybor i przypadek oznacza numer na przyciskach
+
+		    0 - cofniecie o 10 chwil
+		    1 - zatrzymanie
+		    2 - odtworzenie
+		    3 - przesuniecie o 10 chwil
+		    4 - nagrywanie
+		    5 - zatrzymanie nagrywania
+		    6 - wybranie utworu w tyl
+		    7 - wybranie utworu w przod
+
+		   */
+}
 
 
 /*----------Czytanie z przyciskow---------------*/
-void read_bottoms()
+void read_buttons()
 {
-	rgb2_set_intensity();
+		rgb2_set_intensity();
 	  	 if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_7)==GPIO_PIN_RESET)
 	  	 	  	 			  	  	{selection=0;}
 	  	 if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_9)==GPIO_PIN_RESET)
@@ -298,136 +412,26 @@ void read_bottoms()
 	  	  	  		  	  	  	  	 {selection=6;}
 	  	 if (HAL_GPIO_ReadPin(GPIOE, GPIO_PIN_7)==GPIO_PIN_RESET)
 	  	  	  		  	  	 	  	 {selection=7;}
-
-	  switch(selection)
-	  	  {
-				 case 0: {
-					  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, SET);
-					  if (sample < 10 * SAMPLE_RATE)
-						  {
-							  sample = 0;
-						  }
-					  else if (sample==0)
-						  {
-							  //poprzedni utwor
-						  }
-					  else
-						  {
-						  sample -= 10 * SAMPLE_RATE;
-						  LCD1602_2ndLine();
-						  LCD1602_print("-10");
-						  }
-
-					  break;
-						}
-				case 1: {
-					  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_9, RESET);
-					  sample=sample+0;
-					  LCD1602_2ndLine();
-					  LCD1602_print("stop");
-					  rgb1_set(255, 255, 0); //pomaranczowy
-					  break;
-						}
-				case 2: {
-					  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, SET);
-					  sample++;
-					  LCD1602_2ndLine();
-					  LCD1602_print("start");
-					  rgb1_set(0, 255, 0); //zielony
-					  break;
-						}
-				case 3: {
-					 HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, RESET);
-					 if (sample + 10 * SAMPLE_RATE > file_size)
-					 {
-						 sample=0;
-						 playing = 0;
-					 }
-					 else
-					 {
-						sample += 10 * SAMPLE_RATE;
-						LCD1602_2ndLine();
-						LCD1602_print("+10");
-					 }
-					break;
-						}
-				case 4: {
-					HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, SET);
-					LCD1602_2ndLine();
-					LCD1602_print("recording");
-					rgb1_set(255, 0, 0);//czerwony
-					if (recording)
-						{
-						recording = 0;
-						AddWaveHeader(file_name); // nadpisuje nagłówek
-						}
-					else
-					{
-						file_name = GetNextFileName();
-						AddWaveHeader(file_name); // dodaje  nagłówek
-						recording = 1;
-					}
-					break;
-					}
-				case 5: {
-					HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, RESET);
-					rgb1_set(0, 0, 255);//niebieski
-					LCD1602_2ndLine();
-					LCD1602_print("stop recording");
-					break;
-				}
-				case 6: {
-					if (atoi(file_name)>0)
-					{
-						file_name = PreviousFile(file_name);
-						fresult = f_close (&file);
-						fresult = f_open(&file, file_name, FA_READ);
-						HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, SET);
-					}
-					break;
-				}
-				case 7: {
-					file_name = NextFile(file_name);
-					fresult = f_open(&file, file_name, FA_READ);
-					HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, RESET);
-					break;
-				}
-				default: {HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12|GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_15, RESET);
-							break;}
-
-	  	  }
-
-	  /*-----------selection---------------*/
-	  /*wybor i przypadek oznacza numer na przyciskach
-
-	    0 - cofniecie o 10 chwil
-	    1 - zatrzymanie
-	    2 - odtworzenie
-	    3 - przesuniecie o 10 chwil
-	    4 - nagrywanie
-	    5 - zatrzymanie nagrywania
-	    6 - wybranie utworu w tyl
-	    7 - wybranie utworu w przod
-
-	   */
-
-
+	  	 if (selection == last_selection)
+	  	 {
+	  		 select_button(selection);
+	  	 }
+	  	 last_selection = selection;
 }
 
 void petla()
 	{
 		//HAL_DAC_SetValue(&hdac,DAC_CHANNEL_1,DAC_ALIGN_12B_R,2048);
-			 	 //writeSD(); //dziala
-			 	 //readSD(); // dziala
+			 	//writeSD(); //dziala
+			 	//readSD(); // dziala
+				HAL_Delay(100);
 			 	set_volume();
-					//LCD1602_1stLine();
+				//LCD1602_1stLine();
 		 	 	LCD1602_Begin8BIT(RS_GPIO_Port, RS_Pin, E_Pin, D0_GPIO_Port, D0_Pin, D1_Pin, D2_Pin, D3_Pin, D4_GPIO_Port, D4_Pin, D5_Pin, D6_Pin, D7_Pin);
 				//LCD1602_1stLine();
 				LCD1602_print("sprawdzam");
-
-					//rgb2_set(255);
-
-			 	  read_bottoms();
+				//rgb2_set(255);
+			 	read_buttons();
 	}
 /* USER CODE END PFP */
 
