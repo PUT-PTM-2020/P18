@@ -22,6 +22,7 @@ int AddWaveHeader(char* file_path)
 	f_open(f, file_path, FA_OPEN_ALWAYS | FA_READ | FA_WRITE);
 	if (!f)
 	{
+
 		// błąd otwarcia pliku
 		return 1;
 	}

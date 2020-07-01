@@ -53,8 +53,7 @@ char * NextFile(char* file_name)
 		 for (;;) {
 			 res = f_readdir(&dir, &fno);                   /* Read a directory item */
 			 if (res != FR_OK) break;  /* Break on error*/
-			 if (!strcmp(file_name, fno.fname)){
-				 free(prev);
+			 if (atoi(file_name)==atoi(fno.fname)){
 				 prev = malloc(strlen(fno.fname));
 				 strcpy(prev, fno.fname);
 				 res = f_readdir(&dir, &fno);
