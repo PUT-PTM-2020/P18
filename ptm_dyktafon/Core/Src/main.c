@@ -143,13 +143,14 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef*htim) //2,5,4 timer wykorzy
 	/*--------------------Odczyt z mikrofonu------------------*/
 	if(htim->Instance== TIM4)
 	{
-		if (recording)
+		if (recording==1)
 		{
 		HAL_ADC_Start(&hadc1);
 			  if(HAL_ADC_PollForConversion(&hadc1, 10) == HAL_OK)
 			  {
 				  adc_value = HAL_ADC_GetValue(&hadc1);
-				  x = (int16_t)(2.95/(double)4096) * adc_value;
+				  //x = /*(int16_t)*/((2.95/(double)4096) * adc_value);
+				  x=adc_value;
 				  data_chunk[data_iterator]  = x;
 				  data_iterator++;
 				  if (data_iterator >= CHUNK_SIZE - 1)
@@ -408,15 +409,6 @@ void select_button(int selection)
 				break;
 			}
 			default: {break;}
-
-
-
-
-
-
-
-
-
 		}
 
 	}
@@ -550,7 +542,7 @@ void read_buttons()
 	  	 if (HAL_GPIO_ReadPin(GPIOE, GPIO_PIN_2)==GPIO_PIN_RESET)
 	  		  	  	  	  	 		{selection=2;}
 	  	 if (HAL_GPIO_ReadPin(GPIOE, GPIO_PIN_3)==GPIO_PIN_RESET)
-	  		  	  	 	  	  	 	{selection=3;}
+	  		  	  	  	  	  	  	  {selection=3;}
 	  	 if (HAL_GPIO_ReadPin(GPIOE, GPIO_PIN_4)==GPIO_PIN_RESET)
 	  	  	  	  	  	 			{selection=4;}
 	  	 if (HAL_GPIO_ReadPin(GPIOE, GPIO_PIN_5)==GPIO_PIN_RESET)
@@ -630,6 +622,8 @@ int main(void)
   HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3);
   HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
   HAL_TIM_Base_Start_IT(&htim5);
+  HAL_TIM_Base_Start_IT(&htim4);
+
 
   HAL_ADC_Start(&hadc1);
   HAL_ADC_Start(&hadc2);
