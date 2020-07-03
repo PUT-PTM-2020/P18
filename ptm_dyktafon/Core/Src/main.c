@@ -29,7 +29,7 @@
 #include "recorder.h"
 
 #define CHUNK_SIZE 256
-extern const uint8_t rawAudio[123200];
+//extern const uint8_t rawAudio[123200];
 int16_t data_chunk[CHUNK_SIZE];
 extern volatile int data_iterator;
 extern const uint32_t SAMPLE_RATE;
@@ -65,7 +65,7 @@ TIM_HandleTypeDef htim5;
 /* USER CODE BEGIN PV */
 uint16_t adc_value;
 /*------Zmienne potrzebne do glosnika----------*/
-double sample=0;
+uint32_t sample=0;
 double volume=0;
 volatile uint8_t diode_state =0;
 uint16_t value;
@@ -87,7 +87,7 @@ volatile int last_selection=-1;
 char buffer[256]; //bufor odczytu i zapisu
 static FATFS FatFs; //uchwyt do urządzenia FatFs (dysku, karty SD...)
 FRESULT fresult; //do przechowywania wyniku operacji na bibliotece FatFs
-FIL file; //uchwyt do otwartego pliku
+static FIL file; //uchwyt do otwartego pliku
 char * file_name="0.wav";
 WORD bytes_written; //liczba zapisanych byte
 WORD bytes_read; //liczba odczytanych byte
@@ -105,6 +105,24 @@ static void MX_ADC1_Init(void);
 static void MX_TIM4_Init(void);
 static void MX_ADC2_Init(void);
 /* USER CODE BEGIN PFP */
+/*--------------------Otwarcie pliku do odtwarzania------------------------*/
+void OpenFileToRead(char *file_name)
+{
+	FRESULT fr1;
+	fr1=f_open(&file, file_name, FA_READ);
+	sample=44;
+	file_size=f_size(&file);
+	f_lseek(&file, 44);
+
+}
+void CloseFileToRead(char *file_name)
+{
+	f_close(&file);
+}
+
+
+
+
 
 /*---------------------Zapis na karte SD-----------------------*/
 void writeSD()
@@ -127,14 +145,10 @@ void readSD()
 
 }
 /*------------------------Odczyt jednego fragmentu danych------------*/
-int ReadChunk(char* file_path, int16_t data[], uint32_t sample)
+int ReadChunk(char* file_path, uint32_t sample)
 {
-	FIL* f;
-	f_open(f, file_path, FA_READ);
-	uint16_t br;
-	f_lseek(f, sample + 44);
-	f_read(f, data, CHUNK_SIZE, &br);
-	f_close(f);
+	UINT br;
+	f_read(&file, data_chunk, CHUNK_SIZE*2, &br);
 	if (CHUNK_SIZE != br) return 1;
 	return 0;
 }
@@ -170,12 +184,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef*htim) //2,5,4 timer wykorzy
 			{
 				if(sample <= file_size)
 				{
-					HAL_DAC_SetValue(&hdac, DAC_CHANNEL_2, DAC_ALIGN_12B_R, (int16_t)data_chunk[data_iterator]/**volume*/);
+					HAL_DAC_SetValue(&hdac, DAC_CHANNEL_2, DAC_ALIGN_12B_R, /*(int16_t)*/data_chunk[data_iterator]*volume);
 					data_iterator++;
 					if (data_iterator >= CHUNK_SIZE - 1)
 					{
-						sample += CHUNK_SIZE;
-						ReadChunk(file_name, data_chunk,sample);
+						sample += 2*CHUNK_SIZE;
+						ReadChunk(file_name, sample);
 						data_iterator = 0;
 					 }
 				}
@@ -196,7 +210,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef*htim) //2,5,4 timer wykorzy
 		}
 
 	/*-----Proba ustawienia janosci diody--------------*/
-	if(htim->Instance== TIM2)
+	else if(htim->Instance== TIM2)
 			{
 					rgb2_set(255);
 					TIM2->CCR1=2100-diode_state*200;
@@ -265,19 +279,20 @@ void select_button(int selection)
 				HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, RESET);
 				rgb1_set(0, 0, 255);//niebieski
 				LCD1602_2ndLine();
-				LCD1602_print("stop recording");
+				LCD1602_print("pause recording");
 				recording=0;
 				break;
 			}
-		//zatrzymanie nagrywania
+		//zatrzymanie i zapisanie nagrywania
 		case 1:
 			{
 				HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, RESET);
 				rgb1_set(0, 0, 255);//niebieski
 				LCD1602_2ndLine();
 				LCD1602_print("stop recording");
-				AddWaveHeader(file_name);
 				recording=0;
+				CloseFile(file_name);
+			//	AddWaveHeader(file_name);
 				break;
 			}
 		default: {break;}
@@ -333,7 +348,8 @@ void select_button(int selection)
 				LCD1602_2ndLine();
 				LCD1602_print("stop");
 				rgb1_set(255, 255, 0); //pomaranczowy
-			break;
+				CloseFileToRead(file_name);
+				break;
 			}
 		//zakończ odtwarzanie
 		case 3:
@@ -370,6 +386,7 @@ void select_button(int selection)
 			{
 				  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, SET);
 				  sample=0;
+				  OpenFileToRead(file_name);
 				  playing=1;
 				  LCD1602_2ndLine();
 				  LCD1602_print("start");
@@ -385,6 +402,7 @@ void select_button(int selection)
 				rgb1_set(255, 0, 0);//czerwony
 				file_name = GetNextFileName();
 				save_error=AddWaveHeader(file_name); // dodaje  nagłówek
+				OpenFile(file_name);
 				recording = 1;
 				break;
 			}
@@ -633,7 +651,7 @@ int main(void)
 
   	//LCD1602_Begin8BIT(RS_GPIO_Port, RS_Pin, E_Pin, D0_GPIO_Port, D0_Pin, D1_Pin, D2_Pin, D3_Pin, D4_GPIO_Port, D4_Pin, D5_Pin, D6_Pin, D7_Pin);
   	//LCD1602_print("sprzawdzam");
-rgb2_set(255);
+  //rgb2_set(255);
   /* USER CODE END 2 */
 
   /* Infinite loop */

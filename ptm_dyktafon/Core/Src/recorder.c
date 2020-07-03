@@ -11,7 +11,7 @@ const uint32_t SAMPLE_RATE = 8000;
 const uint16_t BITS_PER_SAMPLE = 16;
 int CHUNK_SIZE = 256;
 volatile int data_iterator = 0;
-
+FIL file;
 
 //funkcja musi być uruchomiona na początku i na końcu nagrania żeby przygotować miejsce na nagłowek
 // oraz nadpisać go odpoweidnimi danymi
@@ -19,15 +19,9 @@ int AddWaveHeader(char* file_path)
 {
 	FIL f;
 	FRESULT fr;
-	char wave_header[44];
+	//uint8_t* wave_header= (uint8_t)malloc(sizeof(uint8_t)*44);
+	uint8_t wave_header[44];
 
-	fr=f_open(&f, file_path, FA_OPEN_ALWAYS | FA_READ | FA_WRITE);
-	if (fr)
-	{
-
-		// błąd otwarcia pliku
-		return 1;
-	}
 	// sprawdzenie rozmiaru pliku
 	uint32_t data_size = f_size(&f) - 44;
 	/* write chunkID, must be 'RIFF'  ------------------------------------------*/
@@ -103,8 +97,24 @@ int AddWaveHeader(char* file_path)
 	  wave_header[42]  = (uint8_t)((data_size >> 16) & 0xFF);
 	  wave_header[43]  = (uint8_t)((data_size >> 24) & 0xFF);
 
-	  WORD bw;
-	  f_write(&f, wave_header, 44, &bw);
+
+
+	  UINT bw;
+
+
+	fr=f_open(&f, file_path, FA_OPEN_ALWAYS | FA_READ | FA_WRITE);
+	if (fr)
+	{
+
+		// błąd otwarcia pliku
+		return 1;
+	}
+
+	f_write(&f, wave_header, 44, &bw);
+	 /* for (int i=0; i<44; i++)
+	  {
+		  f_write(&f, wave_header[i], 1, &bw);
+	  }*/
 	  f_close(&f);
 	  if (bw!=44) return 1;
 	  return 0;
@@ -112,12 +122,22 @@ int AddWaveHeader(char* file_path)
 
 int SaveChunk(char* file_path, int16_t *data)
 {
-	FIL f;
 	FRESULT fr;
-	fr=f_open(&f, file_path, FA_OPEN_APPEND | FA_WRITE);
-	WORD bw;
-	fr=f_write(&f, data, (uint16_t)CHUNK_SIZE*2, &bw);
-	f_close(&f);
+	UINT bw;
+	fr=f_write(&file, data, (uint16_t)CHUNK_SIZE*2, &bw);
 	if (CHUNK_SIZE!=bw) return 1;
 	return 0;
 }
+
+void OpenFile(char * file_path)
+{
+	FRESULT fr;
+	fr=f_open(&file, file_path, FA_OPEN_APPEND | FA_WRITE);
+}
+
+void CloseFile(char * file_path)
+{
+	FRESULT fr;
+	fr=f_close(&file);
+}
+
