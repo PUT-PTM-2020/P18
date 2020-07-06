@@ -1,4 +1,4 @@
 recorder.c:18:5:AddWaveHeader	632	static
-recorder.c:123:5:SaveChunk	24	static
-recorder.c:132:6:OpenFile	24	static
-recorder.c:138:6:CloseFile	24	static
+recorder.c:126:5:SaveChunk	24	static
+recorder.c:135:6:OpenFile	24	static
+recorder.c:141:6:CloseFile	24	static

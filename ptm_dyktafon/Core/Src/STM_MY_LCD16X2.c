@@ -127,10 +127,8 @@ static void LCD1602_TIM_Config(void)
 }
 static void LCD1602_TIM_MicorSecDelay(uint32_t uSecDelay)
 {
-	TIM3->ARR = uSecDelay-1;
-	TIM3->SR &= ~(0x0001);  // Clear UEV flag
-	TIM3->CR1 |= 1UL;
-	while((TIM3->SR&0x0001) != 1);
+//	HAL_TIM_SET_COUNTER(&htim3, 0);
+//	while((HAL_TIM_GET_COUNTER(&htim3))<uSecDelay);
 }
 //5) Write command
 static void LCD1602_writeCommand(uint8_t command)
@@ -140,6 +138,7 @@ static void LCD1602_writeCommand(uint8_t command)
 	//Call low level write parallel function
 	LCD1602_write(command);
 }
+
 //6) Write 8 bits data
 static void LCD1602_writeData(uint8_t data)
 {
@@ -219,7 +218,7 @@ void LCD1602_Begin4BIT(GPIO_TypeDef* PORT_RS_E, uint16_t RS, uint16_t E, GPIO_Ty
 	D6_PIN = D6;
 	D7_PIN = D7;
 	//Initialise microsecond timer
-	LCD1602_TIM_Config();
+	//LCD1602_TIM_Config();
 	//Set the mode to 4 bits
 	mode_8_4_I2C = 2;
 	//Function set variable to 4 bits mode

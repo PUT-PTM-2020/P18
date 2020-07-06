@@ -22,8 +22,17 @@ int AddWaveHeader(char* file_path)
 	//uint8_t* wave_header= (uint8_t)malloc(sizeof(uint8_t)*44);
 	uint8_t wave_header[44];
 
+	fr=f_open(&f, file_path, FA_OPEN_ALWAYS | FA_READ | FA_WRITE);
+	if (fr)
+	{
+
+		// błąd otwarcia pliku
+		return 1;
+	}
+
+
 	// sprawdzenie rozmiaru pliku
-	uint32_t data_size = f_size(&f) - 44;
+	uint32_t data_size = f_size(&f) - (uint32_t)44;
 	/* write chunkID, must be 'RIFF'  ------------------------------------------*/
 	  wave_header[0] = 'R';
 	  wave_header[1] = 'I';
@@ -31,7 +40,7 @@ int AddWaveHeader(char* file_path)
 	  wave_header[3] = 'F';
 
 	  /*CHUNK_SIZE - Write the file length */
-	  int ChunkSize = data_size + 36;
+	  uint32_t ChunkSize = data_size + (uint32_t)36;
 	  wave_header[4]  = (uint8_t)((ChunkSize & 0xFF));
 	  wave_header[5]  = (uint8_t)((ChunkSize >> 8) & 0xFF);
 	  wave_header[6]  = (uint8_t)((ChunkSize >> 16) & 0xFF);
@@ -102,13 +111,7 @@ int AddWaveHeader(char* file_path)
 	  UINT bw;
 
 
-	fr=f_open(&f, file_path, FA_OPEN_ALWAYS | FA_READ | FA_WRITE);
-	if (fr)
-	{
 
-		// błąd otwarcia pliku
-		return 1;
-	}
 
 	f_write(&f, wave_header, 44, &bw);
 	 /* for (int i=0; i<44; i++)

@@ -27,6 +27,7 @@
 #include "STM_MY_LCD16X2.h"
 #include "file_manager.h"
 #include "recorder.h"
+#include "stm32f4xx_hal.h"
 
 #define CHUNK_SIZE 256
 //extern const uint8_t rawAudio[123200];
@@ -63,7 +64,7 @@ TIM_HandleTypeDef htim4;
 TIM_HandleTypeDef htim5;
 
 /* USER CODE BEGIN PV */
-uint16_t adc_value;
+int16_t adc_value;
 /*------Zmienne potrzebne do glosnika----------*/
 uint32_t sample=0;
 double volume=0;
@@ -119,7 +120,12 @@ void CloseFileToRead(char *file_name)
 {
 	f_close(&file);
 }
-
+/*----------------Wyswietlacz-------------------------------*/
+/*void LCD1602_TIM_MicorSecDelay(uint32_t uSecDelay)
+{
+	HAL_TIM_SET_COUNTER(&htim3, 0);
+	while((HAL_TIM_GET_COUNTER(&htim3))<uSecDelay);
+}*/
 
 
 
@@ -164,7 +170,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef*htim) //2,5,4 timer wykorzy
 			  {
 				  adc_value = HAL_ADC_GetValue(&hadc1);
 				  //x = /*(int16_t)*/((2.95/(double)4096) * adc_value);
-				  x=adc_value;
+				  //x = adc_value-2000;
+				  if( adc_value >2200)
+				  { x = adc_value;}
+				  else {x = 0;}
+
+
 				  data_chunk[data_iterator]  = x;
 				  data_iterator++;
 				  if (data_iterator >= CHUNK_SIZE - 1)
@@ -184,7 +195,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef*htim) //2,5,4 timer wykorzy
 			{
 				if(sample <= file_size)
 				{
-					HAL_DAC_SetValue(&hdac, DAC_CHANNEL_2, DAC_ALIGN_12B_R, /*(int16_t)*/data_chunk[data_iterator]*volume);
+					HAL_DAC_SetValue(&hdac, DAC_CHANNEL_2, DAC_ALIGN_12B_R, /*(int16_t)*/data_chunk[data_iterator]/**volume*/);
 					data_iterator++;
 					if (data_iterator >= CHUNK_SIZE - 1)
 					{
@@ -236,9 +247,9 @@ void set_volume()
 /*-------------------Konfiguracja diody RGB1----------------------------*/
 void rgb1_set(uint8_t red, uint8_t green, uint8_t blue)
 {
-	htim3.Instance->CCR1=red*2000;
+	/*htim3.Instance->CCR1=red*2000;
 	htim3.Instance->CCR2=green*2000;
-	htim3.Instance->CCR3=blue*2000;
+	htim3.Instance->CCR3=blue*2000;*/
 }
 
 /*-------------------Konfiguracja diody RGB2----------------------------*/
@@ -292,7 +303,7 @@ void select_button(int selection)
 				LCD1602_print("stop recording");
 				recording=0;
 				CloseFile(file_name);
-			//	AddWaveHeader(file_name);
+				AddWaveHeader(file_name);
 				break;
 			}
 		default: {break;}
@@ -584,7 +595,7 @@ void petla()
 				HAL_Delay(100);
 			 	set_volume();
 				//LCD1602_1stLine();
-		 	 	LCD1602_Begin8BIT(RS_GPIO_Port, RS_Pin, E_Pin, D0_GPIO_Port, D0_Pin, D1_Pin, D2_Pin, D3_Pin, D4_GPIO_Port, D4_Pin, D5_Pin, D6_Pin, D7_Pin);
+		 	 	//LCD1602_Begin8BIT(RS_GPIO_Port, RS_Pin, E_Pin, D0_GPIO_Port, D0_Pin, D1_Pin, D2_Pin, D3_Pin, D4_GPIO_Port, D4_Pin, D5_Pin, D6_Pin, D7_Pin);
 				//LCD1602_1stLine();
 				LCD1602_print("sprawdzam");
 				//rgb2_set(255);
@@ -635,23 +646,26 @@ int main(void)
   MX_ADC2_Init();
   /* USER CODE BEGIN 2 */
   HAL_DAC_Start(&hdac,DAC_CHANNEL_2);
-  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
+/*  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
   HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
-  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3);
+  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3);*/
   HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
   HAL_TIM_Base_Start_IT(&htim5);
   HAL_TIM_Base_Start_IT(&htim4);
+  HAL_TIM_Base_Start_IT(&htim3);
+
+  	//LCD1602_Begin4BIT(RS_GPIO_Port, RS_Pin, E_Pin, D4_GPIO_Port, D4_Pin, D5_Pin, D6_Pin, D7_Pin);
+	LCD1602_1stLine();
+	LCD1602_OneLine();
+	LCD1602_display();
+	LCD1602_print("xx");
 
 
   HAL_ADC_Start(&hadc1);
   HAL_ADC_Start(&hadc2);
   fresult = f_mount(&FatFs, "", 0);
-//readSD();
-//writeSD();
+HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, SET);
 
-  	//LCD1602_Begin8BIT(RS_GPIO_Port, RS_Pin, E_Pin, D0_GPIO_Port, D0_Pin, D1_Pin, D2_Pin, D3_Pin, D4_GPIO_Port, D4_Pin, D5_Pin, D6_Pin, D7_Pin);
-  	//LCD1602_print("sprzawdzam");
-  //rgb2_set(255);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -954,19 +968,24 @@ static void MX_TIM3_Init(void)
 
   /* USER CODE END TIM3_Init 0 */
 
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
   TIM_MasterConfigTypeDef sMasterConfig = {0};
-  TIM_OC_InitTypeDef sConfigOC = {0};
 
   /* USER CODE BEGIN TIM3_Init 1 */
 
   /* USER CODE END TIM3_Init 1 */
   htim3.Instance = TIM3;
-  htim3.Init.Prescaler = 49999;
+  htim3.Init.Prescaler = 83;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim3.Init.Period = 1999;
+  htim3.Init.Period = 0xffff-1;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-  if (HAL_TIM_PWM_Init(&htim3) != HAL_OK)
+  if (HAL_TIM_Base_Init(&htim3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim3, &sClockSourceConfig) != HAL_OK)
   {
     Error_Handler();
   }
@@ -976,26 +995,9 @@ static void MX_TIM3_Init(void)
   {
     Error_Handler();
   }
-  sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = 0;
-  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
-  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
-  if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_3) != HAL_OK)
-  {
-    Error_Handler();
-  }
   /* USER CODE BEGIN TIM3_Init 2 */
 
   /* USER CODE END TIM3_Init 2 */
-  HAL_TIM_MspPostInit(&htim3);
 
 }
 
@@ -1065,7 +1067,7 @@ static void MX_TIM5_Init(void)
   htim5.Instance = TIM5;
   htim5.Init.Prescaler = 49;
   htim5.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim5.Init.Period = 104;
+  htim5.Init.Period = 209;
   htim5.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim5.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim5) != HAL_OK)
@@ -1116,6 +1118,9 @@ static void MX_GPIO_Init(void)
                           |GPIO_PIN_7, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOE, RS_Pin|E_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pins : PE2 PE3 PE4 PE5 
@@ -1145,6 +1150,13 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PC8 */
+  GPIO_InitStruct.Pin = GPIO_PIN_8;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PB7 PB9 */
   GPIO_InitStruct.Pin = GPIO_PIN_7|GPIO_PIN_9;
