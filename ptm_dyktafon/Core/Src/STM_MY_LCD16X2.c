@@ -32,15 +32,19 @@ static uint16_t D4_PIN, D5_PIN, D6_PIN, D7_PIN;	// MSBs D5, D6, D7 and D8 pins
 static uint8_t DisplayControl = 0x0F;
 static uint8_t FunctionSet = 0x38;
 
+
+static TIM_HandleTypeDef htim3;
 //***** Functions definitions *****//
 //Private functions
 //1) Enable EN pulse
 static void LCD1602_EnablePulse(void)
 {
 	HAL_GPIO_WritePin(PORT_RS_and_E, PIN_E, GPIO_PIN_SET);
-	LCD1602_TIM_MicorSecDelay(writeTimeConstant);
+	//LCD1602_TIM_MicorSecDelay(writeTimeConstant);
+	HAL_Delay(5);
 	HAL_GPIO_WritePin(PORT_RS_and_E, PIN_E, GPIO_PIN_RESET);
-	LCD1602_TIM_MicorSecDelay(60);
+	//LCD1602_TIM_MicorSecDelay(60);
+	HAL_Delay(5);
 }
 //2) RS control
 static void LCD1602_RS(bool state)
@@ -127,8 +131,8 @@ static void LCD1602_TIM_Config(void)
 }
 static void LCD1602_TIM_MicorSecDelay(uint32_t uSecDelay)
 {
-//	HAL_TIM_SET_COUNTER(&htim3, 0);
-//	while((HAL_TIM_GET_COUNTER(&htim3))<uSecDelay);
+__HAL_TIM_SET_COUNTER(&htim3, 0);
+while((__HAL_TIM_GET_COUNTER(&htim3))<uSecDelay);
 }
 //5) Write command
 static void LCD1602_writeCommand(uint8_t command)
@@ -226,14 +230,14 @@ void LCD1602_Begin4BIT(GPIO_TypeDef* PORT_RS_E, uint16_t RS, uint16_t E, GPIO_Ty
 	
 	//Initialise LCD
 	//1. Wait at least 15ms
-	HAL_Delay(20);
+	HAL_Delay(50);
 	//2. Attentions sequence
 	LCD1602_write4bitCommand(0x3);
 	HAL_Delay(5);
 	LCD1602_write4bitCommand(0x3);
 	HAL_Delay(1);
 	LCD1602_write4bitCommand(0x3);
-	HAL_Delay(1);
+	HAL_Delay(5);
 	LCD1602_write4bitCommand(0x2);  //4 bit mode
 	HAL_Delay(1);
 	//3. Display control (Display ON, Cursor ON, blink cursor)

@@ -378,11 +378,10 @@ void select_button(int selection)
 		//0 utwór do tyłu
 			case 0:
 			{
-				if (atoi(file_name)>1)
-				{
+
 					file_name = PreviousFile(file_name);
 					HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, SET);
-				}
+
 						break;
 			}
 			//utwór do przodu
@@ -585,6 +584,10 @@ void read_buttons()
 	  		 select_button(selection);
 	  	 }
 	  	 last_selection = selection;
+	  	 selection=-1;
+
+
+
 }
 
 void petla()
@@ -654,11 +657,15 @@ int main(void)
   HAL_TIM_Base_Start_IT(&htim4);
   HAL_TIM_Base_Start_IT(&htim3);
 
-  	//LCD1602_Begin4BIT(RS_GPIO_Port, RS_Pin, E_Pin, D4_GPIO_Port, D4_Pin, D5_Pin, D6_Pin, D7_Pin);
-	LCD1602_1stLine();
-	LCD1602_OneLine();
-	LCD1602_display();
-	LCD1602_print("xx");
+  	LCD1602_Begin4BIT(RS_GPIO_Port, RS_Pin, E_Pin, D4_GPIO_Port, D4_Pin, D5_Pin, D6_Pin, D7_Pin);
+	LCD1602_noCursor();
+	LCD1602_noBlink();
+  	//LCD1602_clear();
+  	//LCD1602_1stLine();
+	//LCD1602_OneLine();
+	//LCD1602_display();
+	//LCD1602_print("xx");
+	LCD1602_PrintInt(playing);
 
 
   HAL_ADC_Start(&hadc1);
@@ -849,16 +856,10 @@ static void MX_DAC_Init(void)
   {
     Error_Handler();
   }
-  /** DAC channel OUT1 config 
+  /** DAC channel OUT2 config 
   */
   sConfig.DAC_Trigger = DAC_TRIGGER_NONE;
   sConfig.DAC_OutputBuffer = DAC_OUTPUTBUFFER_ENABLE;
-  if (HAL_DAC_ConfigChannel(&hdac, &sConfig, DAC_CHANNEL_1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /** DAC channel OUT2 config 
-  */
   if (HAL_DAC_ConfigChannel(&hdac, &sConfig, DAC_CHANNEL_2) != HAL_OK)
   {
     Error_Handler();

@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <main.h>
 
+
 //***** List of COMMANDS *****//
 #define LCD_CLEARDISPLAY 		0x01
 #define LCD_RETURNHOME 			0x02
