@@ -15,6 +15,6 @@
 #include "ff.h"
 
 int AddWaveHeader(char* file_path);
-int SaveChunk(char* file_path, int16_t data[]);
+int SaveChunk(char* file_path, uint8_t data[]);
 
 #endif /* INC_RECORDER_H_ */

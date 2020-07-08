@@ -31,7 +31,7 @@
 
 #define CHUNK_SIZE 256
 //extern const uint8_t rawAudio[123200];
-int16_t data_chunk[CHUNK_SIZE];
+uint8_t data_chunk[CHUNK_SIZE];
 extern volatile int data_iterator;
 extern const uint32_t SAMPLE_RATE;
 /* USER CODE END Includes */
@@ -65,9 +65,9 @@ TIM_HandleTypeDef htim4;
 TIM_HandleTypeDef htim5;
 
 /* USER CODE BEGIN PV */
-int16_t adc_value;
+uint8_t adc_value;
 /*------Zmienne potrzebne do glosnika----------*/
-uint32_t sample=0;
+volatile uint32_t sample=0;
 double volume=0;
 volatile uint8_t diode_state =0;
 uint16_t value;
@@ -80,7 +80,7 @@ volatile int recording = 0;
 volatile int save_error=0;
 
 /*------------zmienne do ... --------------*/
-volatile int16_t x=0;
+volatile uint8_t x=0;
 volatile int y=0;
 volatile int z=100;
 volatile int selection=-1;
@@ -156,11 +156,11 @@ void readSD()
 int ReadChunk(char* file_path, uint32_t sample)
 {
 	UINT br;
-	f_read(&file, data_chunk, CHUNK_SIZE*2, &br);
+	f_read(&file, data_chunk, CHUNK_SIZE, &br);
 	if (CHUNK_SIZE != br) return 1;
 	return 0;
 }
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef*htim) //2,5,4 timer wykorzystany 3 do diody1
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef*htim) //2,5,4 timer wykorzystany 1 do diody1
 {
 	/*--------------------Odczyt z mikrofonu------------------*/
 	if(htim->Instance== TIM4)
@@ -172,16 +172,23 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef*htim) //2,5,4 timer wykorzy
 			  {
 				  adc_value = HAL_ADC_GetValue(&hadc1);
 				  //x = /*(int16_t)*/((2.95/(double)4096) * adc_value);
-				  //x = adc_value-2000;
-				  if( adc_value >2200)
-				  { x = adc_value;}
-				  else {x = 0;}
+				 // x = adc_value-200;
 
+				  /*if( adc_value >2200)
+				  { x = adc_value;}
+				  else {x = 0;}*/
+
+				  //x=(adc_value-256)*(-1);
+				  x=adc_value;
+				  x = (x & 0xF0) >> 4 | (x & 0x0F) << 4;
+				  x = (x & 0xCC) >> 2 | (x & 0x33) << 2;
+				  x = (x & 0xAA) >> 1 | (x & 0x55) << 1;
 
 				  data_chunk[data_iterator]  = x;
 				  data_iterator++;
 				  if (data_iterator >= CHUNK_SIZE - 1)
 					  {
+
 					  SaveChunk(file_name, data_chunk);
 					  data_iterator = 0;
 					  // tu jeszcze można policzyć średnią z tego fragmentu danych i na podstawie tego ocenić głośność, i ustawić zmienną sterującą diodą2
@@ -197,11 +204,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef*htim) //2,5,4 timer wykorzy
 			{
 				if(sample <= file_size)
 				{
-					HAL_DAC_SetValue(&hdac, DAC_CHANNEL_2, DAC_ALIGN_12B_R, /*(int16_t)*/data_chunk[data_iterator]*0.2/**volume*/);
+					HAL_DAC_SetValue(&hdac, DAC_CHANNEL_2, DAC_ALIGN_12B_R, data_chunk[data_iterator]*volume);
 					data_iterator++;
 					if (data_iterator >= CHUNK_SIZE - 1)
 					{
-						sample += 2*CHUNK_SIZE;
+						sample += CHUNK_SIZE;
 						ReadChunk(file_name, sample);
 						data_iterator = 0;
 					 }
@@ -241,7 +248,7 @@ void set_volume()
 	  if(HAL_ADC_PollForConversion(&hadc2, 10) == HAL_OK)
 	  {
 		  value = HAL_ADC_GetValue(&hadc2);
-		  volume = 0.5 + value/(double)4096;
+		  volume = value/(double)409;
 
 	  }
 }
@@ -362,6 +369,7 @@ void select_button(int selection)
 				LCD1602_print("stop");
 				rgb1_set(255, 255, 0); //pomaranczowy
 				CloseFileToRead(file_name);
+
 				break;
 			}
 		//zakończ odtwarzanie
@@ -370,7 +378,7 @@ void select_button(int selection)
 				playing=0;
 				break;
 			}
-		default: {break;}
+		default: { break;}
 		}
 	}
 	else
@@ -429,6 +437,7 @@ void select_button(int selection)
 				break;
 
 			}
+			//kontynuacja nagrywania
 			case 5:
 			{
 				HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, SET);
@@ -674,8 +683,8 @@ int main(void)
   HAL_ADC_Start(&hadc1);
   HAL_ADC_Start(&hadc2);
   fresult = f_mount(&FatFs, "", 0);
-HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, SET);
-
+  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, SET);
+  file_name=NextFile(file_name);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -756,7 +765,7 @@ static void MX_ADC1_Init(void)
   */
   hadc1.Instance = ADC1;
   hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
-  hadc1.Init.Resolution = ADC_RESOLUTION_12B;
+  hadc1.Init.Resolution = ADC_RESOLUTION_8B;
   hadc1.Init.ScanConvMode = DISABLE;
   hadc1.Init.ContinuousConvMode = DISABLE;
   hadc1.Init.DiscontinuousConvMode = DISABLE;

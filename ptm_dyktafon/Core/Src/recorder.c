@@ -8,7 +8,7 @@
 #include <recorder.h>
 
 const uint32_t SAMPLE_RATE = 8000;
-const uint16_t BITS_PER_SAMPLE = 16;
+const uint16_t BITS_PER_SAMPLE = 8;
 int CHUNK_SIZE = 256;
 volatile int data_iterator = 0;
 FIL file;
@@ -87,11 +87,11 @@ int AddWaveHeader(char* file_path)
 	  wave_header[31]  = (uint8_t)((byte_rate >> 24) & 0xFF);
 
 	  /* Write the block alignment  == NumChannels * BitsPerSample/8*/
-	  wave_header[32]  = 0x02;
+	  wave_header[32]  = 0x01;
 	  wave_header[33]  = 0x00;
 
 	  /* Write the number of bits per sample */
-	  wave_header[34]  = 0x10;
+	  wave_header[34]  = 0x08;
 	  wave_header[35]  = 0x00;
 
 	  /* Write the Data chunk, must be 'data' */
@@ -123,11 +123,11 @@ int AddWaveHeader(char* file_path)
 	  return 0;
 }
 
-int SaveChunk(char* file_path, int16_t *data)
+int SaveChunk(char* file_path, uint8_t *data)
 {
 	FRESULT fr;
 	UINT bw;
-	fr=f_write(&file, data, (uint16_t)CHUNK_SIZE*2, &bw);
+	fr=f_write(&file, data, CHUNK_SIZE, &bw);
 	if (CHUNK_SIZE!=bw) return 1;
 	return 0;
 }

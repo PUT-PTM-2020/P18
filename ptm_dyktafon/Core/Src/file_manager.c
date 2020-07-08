@@ -60,11 +60,10 @@ char * NextFile(char* file_name)
         f_closedir(&dir);
         if(fno.fname[0]!=0)
         {
-       	 char *c;
-       	 c=malloc(8);
-       	 sprintf(c, "%d", atoi(fno.fname));
-       	 strcat(c,".wav");
-       	 return c;
+        char *c;
+		c=malloc(strlen(fno.fname));
+		strcpy(c,fno.fname);
+		 return c;
         }
         else return file_name;
     }
@@ -80,11 +79,10 @@ char * NextFile(char* file_name)
                  if (res != FR_OK || fno.fname[0] == 0) break;
                  f_closedir(&dir);
 
-            	 char *c;
-            	 c=malloc(8);
-            	 sprintf(c, "%d", atoi(fno.fname));
-            	 strcat(c,".wav");
-            	 return c;
+              char *c;
+			  c=malloc(strlen(fno.fname));
+			  strcpy(c,fno.fname);
+			  return c;
              }
          }
          f_closedir(&dir);

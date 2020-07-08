@@ -1,3 +1,3 @@
 file_manager.c:17:7:GetNextFileName	72	static
 file_manager.c:49:8:NextFile	88	static
-file_manager.c:96:8:PreviousFile	80	static
+file_manager.c:94:8:PreviousFile	80	static
