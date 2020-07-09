@@ -80,7 +80,6 @@ volatile int recording = 0;
 
 
 /*------------zmienne do ... --------------*/
-volatile uint8_t x=0;
 volatile int y=0;
 volatile int z=100;
 volatile int selection=-1;
@@ -140,14 +139,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef*htim) //2,5,4 timer wykorzy
 			HAL_ADC_Start(&hadc1);
 			  if(HAL_ADC_PollForConversion(&hadc1, 10) == HAL_OK)
 			  {
-				 adc_value = (uint8_t)HAL_ADC_GetValue(&hadc1);
+				 adc_value = HAL_ADC_GetValue(&hadc1);
 
-				 x=adc_value;
-				 /* x = (x & 0xF0) >> 4 | (x & 0x0F) << 4;
-				  x = (x & 0xCC) >> 2 | (x & 0x33) << 2;
-				  x = (x & 0xAA) >> 1 | (x & 0x55) << 1;*/
-
-				  data_chunk[data_iterator]  = x;
+				  data_chunk[data_iterator]  = adc_value;
 				  data_iterator++;
 				  if (data_iterator >= CHUNK_SIZE - 1)
 					  {
@@ -160,7 +154,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef*htim) //2,5,4 timer wykorzy
 						  sum+=data_chunk[i];
 					  }
 					  rgb2_set((uint8_t)(sum/CHUNK_SIZE));
-					  //rgb2_set((uint8_t)(volume*10));
+
 
 
 					  }
@@ -506,7 +500,10 @@ int main(void)
 
   //HAL_ADC_Start(&hadc1);
   HAL_ADC_Start(&hadc2);
+
+
   fresult = f_mount(&FatFs, "", 0);
+
   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, SET);
   file_name=NextFile(file_name);
   /* USER CODE END 2 */

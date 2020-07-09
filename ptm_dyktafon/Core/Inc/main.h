@@ -56,7 +56,7 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
-
+void rgb2_set(uint8_t red);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/

@@ -56,6 +56,13 @@ char * NextFile(char* file_name)
     if (atoi(file_name)==0)
     {
         res = f_readdir(&dir, &fno);
+        if (res)
+        {
+      	  	LCD1602_clear();
+      	  	LCD1602_1stLine();
+      		LCD1602_print("NO CARD");
+      		HAL_Delay(10000);
+        }
         res = f_readdir(&dir, &fno);
         f_closedir(&dir);
         if(fno.fname[0]!=0)
