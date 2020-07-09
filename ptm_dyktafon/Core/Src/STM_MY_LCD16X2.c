@@ -36,15 +36,18 @@ static uint8_t FunctionSet = 0x38;
 static TIM_HandleTypeDef htim3;
 //***** Functions definitions *****//
 //Private functions
+
 //1) Enable EN pulse
 static void LCD1602_EnablePulse(void)
 {
 	HAL_GPIO_WritePin(PORT_RS_and_E, PIN_E, GPIO_PIN_SET);
 	//LCD1602_TIM_MicorSecDelay(writeTimeConstant);
-	HAL_Delay(5);
+	for(int i=0; i<100; i++);
+	//HAL_Delay(5);
 	HAL_GPIO_WritePin(PORT_RS_and_E, PIN_E, GPIO_PIN_RESET);
 	//LCD1602_TIM_MicorSecDelay(60);
-	HAL_Delay(5);
+	for(int i=0; i<650; i++);
+	//HAL_Delay(60);
 }
 //2) RS control
 static void LCD1602_RS(bool state)
@@ -237,7 +240,7 @@ void LCD1602_Begin4BIT(GPIO_TypeDef* PORT_RS_E, uint16_t RS, uint16_t E, GPIO_Ty
 	LCD1602_write4bitCommand(0x3);
 	HAL_Delay(1);
 	LCD1602_write4bitCommand(0x3);
-	HAL_Delay(5);
+	HAL_Delay(1);
 	LCD1602_write4bitCommand(0x2);  //4 bit mode
 	HAL_Delay(1);
 	//3. Display control (Display ON, Cursor ON, blink cursor)
