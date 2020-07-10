@@ -28,7 +28,8 @@
 #include "file_manager.h"
 #include "recorder.h"
 #include "stm32f4xx_hal.h"
-
+#include <stdlib.h>
+#include <string.h>
 #define CHUNK_SIZE 256
 //extern const uint8_t rawAudio[123200];
 uint8_t data_chunk[CHUNK_SIZE];
@@ -125,13 +126,38 @@ void CloseFileToRead(char *file_name)
 int ReadChunk(char* file_path, uint32_t sample)
 {
 	UINT br;
+	f_lseek(&file, sample);
 	f_read(&file, data_chunk, CHUNK_SIZE, &br);
 	if (CHUNK_SIZE != br) return 1;
 	return 0;
 }
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef*htim) //2,5,4 timer wykorzystany 1 do diody1
 {
-	/*--------------------Odczyt z mikrofonu------------------*/
+/*--------------------Wyswietlanie czasu-------------------*/
+
+	if(htim->Instance== TIM3)
+		{
+		if (playing)
+			 	{
+		      char * display_time = (char *)malloc(13);
+		      int seconds = sample/SAMPLE_RATE;
+		      int minutes = seconds / 60 ;
+		      int seconds_left = seconds % 60;
+		      int file_seconds = (file_size-44)/SAMPLE_RATE;
+		      int file_minutes = file_seconds / 60 ;
+		      int file_seconds_left = file_seconds % 60;
+		      sprintf(display_time, "%0.2d:%0.2d / %0.2d:%0.2d",minutes, seconds_left,file_minutes, file_seconds_left);
+		      printf("%s\n",display_time);
+
+			 		LCD1602_clear();
+			 		LCD1602_1stLine();
+			 		LCD1602_print(file_name);
+			 		LCD1602_2ndLine();
+			 		LCD1602_print(display_time);
+			 		free(display_time);
+			 	}
+		}
+/*--------------------Odczyt z mikrofonu------------------*/
 	if(htim->Instance== TIM4)
 	{
 		if (recording==1)
@@ -162,7 +188,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef*htim) //2,5,4 timer wykorzy
 		}
 	}
 
-	/*--------------------Odwarzanie z glosniczka------------------*/
+/*--------------------Odwarzanie z glosniczka------------------*/
 	if(htim->Instance== TIM5)
 		{
 			if(playing)
@@ -219,7 +245,7 @@ void rgb2_set(uint8_t red)
 	TIM2->CCR1=0;
 }
 
-
+/*-------------------Wybieranie przycisków----------------------------*/
 
 void select_button(int selection)
 {
@@ -233,7 +259,7 @@ void select_button(int selection)
 				HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, RESET);
 				rgb1_set(0, 0, 255);//niebieski
 				LCD1602_clear();
-				LCD1602_2ndLine();
+				LCD1602_1stLine();
 				LCD1602_print("pause recording");
 				recording=0;
 				break;
@@ -244,7 +270,7 @@ void select_button(int selection)
 				HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, RESET);
 				rgb1_set(0, 0, 255);//niebieski
 				LCD1602_clear();
-				LCD1602_2ndLine();
+				LCD1602_1stLine();
 				LCD1602_print("stop recording");
 				recording=0;
 				rgb2_set(0);
@@ -252,7 +278,14 @@ void select_button(int selection)
 				AddWaveHeader(file_name);
 				break;
 			}
-		default: {break;}
+		default:
+			{
+				LCD1602_clear();
+				LCD1602_1stLine();
+				LCD1602_print("WRONG BUTTON");
+				break;
+
+			}
 		}
 	}
 	else if (playing)
@@ -265,11 +298,7 @@ void select_button(int selection)
 				  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, SET);
 				  if (sample < 10 * SAMPLE_RATE)
 					  {
-						  sample = 0;
-					  }
-				  else if (sample==0)
-					  {
-						  //poprzedni utwor
+						  sample = 44;
 					  }
 				  else
 					  {
@@ -288,6 +317,7 @@ void select_button(int selection)
 				 {
 					 sample=0;
 					 playing = 0;
+					 CloseFileToRead(file_name);
 				 }
 				 else
 				 {
@@ -318,7 +348,13 @@ void select_button(int selection)
 				playing=0;
 				break;
 			}
-		default: { break;}
+		default:
+			{
+			LCD1602_clear();
+			LCD1602_1stLine();
+			LCD1602_print("WRONG BUTTON");
+			break;
+			}
 		}
 	}
 	else
@@ -397,7 +433,13 @@ void select_button(int selection)
 				recording=1;
 				break;
 			}
-			default: {break;}
+			default:
+			{
+				LCD1602_clear();
+				LCD1602_1stLine();
+				LCD1602_print("WRONG BUTTON");
+				break;
+			}
 		}
 
 	}
@@ -517,7 +559,7 @@ int main(void)
     /* USER CODE BEGIN 3 */
 		HAL_Delay(100);
 	 	set_volume();
-		//LCD1602_print("sprawdzam");
+
 	 	read_buttons();
 
 
@@ -894,9 +936,9 @@ static void MX_TIM3_Init(void)
 
   /* USER CODE END TIM3_Init 1 */
   htim3.Instance = TIM3;
-  htim3.Init.Prescaler = 83;
+  htim3.Init.Prescaler = 41999;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim3.Init.Period = 0xffff-1;
+  htim3.Init.Period = 1999;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim3) != HAL_OK)
