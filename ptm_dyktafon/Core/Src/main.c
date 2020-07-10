@@ -78,7 +78,7 @@ uint32_t file_size = 0;
 
 /*-----------zmienne potrzebne do nagrywania-------------*/
 volatile int recording = 0;
-
+uint32_t recording_time = 0;
 
 /*------------zmienne do ... --------------*/
 volatile int y=0;
@@ -91,6 +91,8 @@ static FATFS FatFs; //uchwyt do urządzenia FatFs (dysku, karty SD...)
 FRESULT fresult; //do przechowywania wyniku operacji na bibliotece FatFs
 static FIL file; //uchwyt do otwartego pliku
 char * file_name="0.wav";
+
+
 
 /* USER CODE END PV */
 
@@ -156,6 +158,25 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef*htim) //2,5,4 timer wykorzy
 			 		LCD1602_print(display_time);
 			 		free(display_time);
 			 	}
+		if (recording)
+			{
+		  char * display_time = (char *)malloc(16);
+		  int seconds = recording_time/SAMPLE_RATE;
+		  int minutes = seconds / 60 ;
+		  int seconds_left = seconds % 60;
+		  sprintf(display_time, "%s: %0.2d:%0.2d",file_name, minutes, seconds_left);
+		  printf("%s\n",display_time);
+
+				LCD1602_clear();
+				LCD1602_1stLine();
+				LCD1602_print("recording");
+				LCD1602_2ndLine();
+				LCD1602_print(display_time);
+				free(display_time);
+			}
+
+
+
 		}
 /*--------------------Odczyt z mikrofonu------------------*/
 	if(htim->Instance== TIM4)
@@ -179,6 +200,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef*htim) //2,5,4 timer wykorzy
 					  {
 						  sum+=data_chunk[i];
 					  }
+					  recording_time+=CHUNK_SIZE;
 					  rgb2_set((uint8_t)(sum/CHUNK_SIZE));
 
 
@@ -208,8 +230,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef*htim) //2,5,4 timer wykorzy
 				}
 				else
 				{
-					sample = 0;
-					playing = 0;
+					rgb1_set(0, 0, 0);
+			 		playing = 0;
+			 		 sample = 0;
+			 		 CloseFileToRead(file_name);
 				}
 			}
 		}
@@ -280,9 +304,7 @@ void select_button(int selection)
 			}
 		default:
 			{
-				LCD1602_clear();
-				LCD1602_1stLine();
-				LCD1602_print("WRONG BUTTON");
+
 				break;
 
 			}
@@ -304,7 +326,7 @@ void select_button(int selection)
 					  {
 					  sample -= 10 * SAMPLE_RATE;
 					  LCD1602_clear();
-					  LCD1602_2ndLine();
+					  LCD1602_1stLine();
 					  LCD1602_print("-10");
 					  }
 				break;
@@ -323,7 +345,7 @@ void select_button(int selection)
 				 {
 					sample += 10 * SAMPLE_RATE;
 					LCD1602_clear();
-					LCD1602_2ndLine();
+					LCD1602_1stLine();
 					LCD1602_print("+10");
 				 }
 				 break;
@@ -333,26 +355,23 @@ void select_button(int selection)
 			{
 				//podczas zatrzymania
 				playing=0;
-				HAL_GPIO_WritePin(GPIOB, GPIO_PIN_9, RESET);
-				LCD1602_clear();
-				LCD1602_2ndLine();
-				LCD1602_print("stop");
-				rgb1_set(255, 255, 0); //pomaranczowy
-				CloseFileToRead(file_name);
-
 				break;
 			}
 		//zakończ odtwarzanie
 		case 3:
 			{
 				playing=0;
+				HAL_GPIO_WritePin(GPIOB, GPIO_PIN_9, RESET);
+				LCD1602_clear();
+				LCD1602_1stLine();
+				LCD1602_print("stop");
+				rgb1_set(255, 255, 0); //pomaranczowy
+				CloseFileToRead(file_name);
 				break;
 			}
 		default:
 			{
-			LCD1602_clear();
-			LCD1602_1stLine();
-			LCD1602_print("WRONG BUTTON");
+
 			break;
 			}
 		}
@@ -367,6 +386,7 @@ void select_button(int selection)
 
 					file_name = PreviousFile(file_name);
 					LCD1602_clear();
+					LCD1602_1stLine();
 					LCD1602_print(file_name);
 					HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, SET);
 
@@ -377,6 +397,7 @@ void select_button(int selection)
 			{
 			file_name = NextFile(file_name);
 			LCD1602_clear();
+			LCD1602_1stLine();
 			LCD1602_print(file_name);
 			HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, RESET);
 			break;
@@ -388,20 +409,16 @@ void select_button(int selection)
 				  sample=0;
 				  OpenFileToRead(file_name);
 				  playing=1;
-				  LCD1602_clear();
-				  LCD1602_1stLine();
-				  LCD1602_print(file_name);
-				  LCD1602_2ndLine();
-				  LCD1602_print("start");
 				  rgb1_set(0, 255, 0); //zielony
 				  break;
 			}
 			//nagraj nowy utwór
 			case 3:
 			{
+				recording_time = 0;
 				HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, SET);
 				LCD1602_clear();
-				LCD1602_2ndLine();
+				LCD1602_1stLine();
 				LCD1602_print("recording");
 				rgb1_set(255, 0, 0);//czerwony
 				file_name = GetNextFileName();
@@ -415,9 +432,6 @@ void select_button(int selection)
 			{
 				HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, SET);
 				playing=1;
-				LCD1602_clear();
-				LCD1602_2ndLine();
-				LCD1602_print("start");
 				rgb1_set(0, 255, 0); //zielony
 				break;
 
@@ -428,16 +442,13 @@ void select_button(int selection)
 				HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, SET);
 				rgb1_set(255, 0, 0);//czerwony
 				LCD1602_clear();
-				LCD1602_2ndLine();
+				LCD1602_1stLine();
 				LCD1602_print("recording");
 				recording=1;
 				break;
 			}
 			default:
 			{
-				LCD1602_clear();
-				LCD1602_1stLine();
-				LCD1602_print("WRONG BUTTON");
 				break;
 			}
 		}
@@ -936,7 +947,7 @@ static void MX_TIM3_Init(void)
 
   /* USER CODE END TIM3_Init 1 */
   htim3.Instance = TIM3;
-  htim3.Init.Prescaler = 41999;
+  htim3.Init.Prescaler = 20999;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim3.Init.Period = 1999;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
